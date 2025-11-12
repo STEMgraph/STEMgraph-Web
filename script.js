@@ -1,7 +1,7 @@
 let Graph;
 let currentNode = null;
 
-/* modal- und search-elemente */
+/* modal- und search-elemente definieren */
 const modal = document.getElementById('node-modal');
 const modalTitle = document.getElementById('modal-title');
 const modalId = document.getElementById('modal-id');
@@ -13,19 +13,14 @@ const searchForm = document.getElementById('search-form');
 const keywordInput = document.getElementById('keywordsearch');
 const resetLink = document.getElementById('reset-graph');
 const btnShowKeywords = document.getElementById('btn-show-keywords');
+const btnShowKeywordCloud = document.getElementById('btn-show-keywordcloud');
 
 
-/* modal öffnen */
+/* modal kram*/
 function openModal(node) {
   currentNode = node;
-  
-  /* title ist das topic (teaches) */
   modalTitle.textContent = node.teaches || 'Kein Topic';
-  
-  /* id klein darunter */
   modalId.textContent = node.name;
-  
-  /* keywords */
   modalKeywords.innerHTML = '';
   if (node.keywords && node.keywords.length > 0) {
     node.keywords.forEach(keyword => {
@@ -36,56 +31,60 @@ function openModal(node) {
   } else {
     modalKeywords.textContent = 'Keine Keywords';
   }
-  
+
   modal.classList.remove('hidden');
 }
 
-/* modal schließen */
 function closeModal() {
   modal.classList.add('hidden');
   currentNode = null;
 }
 
-/* graph-daten parsen: konvertiert api-response in nodes/links format */
+/* api-response parsen */
 function parseGraphData(data) {
   const nodes = [];
   const links = [];
   const seen = new Set();
-
-  /* @graph kann array oder einzelnes objekt sein */
+  const nodeMap = new Map();
   const graphItems = Array.isArray(data["@graph"]) ? data["@graph"] : [data["@graph"]];
 
-  /* rekursive funktion um verschachtelte objekte zu verarbeiten */
   function processItem(item) {
     const id = item["@id"];
+    
     if (!seen.has(id)) {
-      nodes.push({
+      const node = {
         id: id,
         name: id,
         repo_link: "https://github.com/STEMgraph/" + id,
         teaches: item["teaches"] || null,
         keywords: item["keywords"] || []
-      });
+      };
+      nodes.push(node);
+      nodeMap.set(id, node);
       seen.add(id);
+    } else {
+      const existingNode = nodeMap.get(id);
+      if (item["teaches"]) existingNode.teaches = item["teaches"];
+      if (item["keywords"] && item["keywords"].length > 0) existingNode.keywords = item["keywords"];
     }
     
     (item["dependsOn"] || []).forEach(target => {
-      /* target kann string (id) oder objekt sein */
       const targetId = typeof target === 'string' ? target : target["@id"];
       links.push({ source: id, target: targetId });
       
       if (!seen.has(targetId)) {
-        nodes.push({
+        const node = {
           id: targetId,
           name: targetId,
           repo_link: "https://github.com/STEMgraph/" + targetId,
           teaches: typeof target === 'object' ? target["teaches"] : null,
           keywords: typeof target === 'object' ? (target["keywords"] || []) : []
-        });
+        };
+        nodes.push(node);
+        nodeMap.set(targetId, node);
         seen.add(targetId);
       }
       
-      /* wenn target ein objekt ist, rekursiv verarbeiten */
       if (typeof target === 'object' && target["@id"]) {
         processItem(target);
       }
@@ -96,12 +95,13 @@ function parseGraphData(data) {
   return { nodes, links };
 }
 
-/* graph mit neuen daten laden */
+/* graph mit den geparsten daten laden*/
 function loadGraph(url) {
   fetch(url)
     .then(response => response.json())
     .then(data => {
       const graphData = parseGraphData(data);
+      Graph.nodeVal(() => 1);
       Graph.graphData(graphData);
     })
     .catch(error => {
@@ -112,11 +112,10 @@ function loadGraph(url) {
 
 /* event-listener für modal-buttons */
 btnClose.addEventListener('click', closeModal);
-
 btnExplore.addEventListener('click', () => {
   if (!currentNode) return;
   
-  /* api-call zum subgraph laden */
+  /* api-call zum subgraph + neuaufbau*/
   const apiUrl = `http://localhost:8000/getPathToExercise/${currentNode.id}`;
   
   fetch(apiUrl)
@@ -127,8 +126,7 @@ btnExplore.addEventListener('click', () => {
         closeModal();
         return;
       }
-      
-      /* neuaufbau des graphs mit subgraph-daten */
+      Graph.nodeVal(() => 1);
       Graph.graphData(parseGraphData(data));
       closeModal();
     })
@@ -157,26 +155,57 @@ searchForm.addEventListener('submit', (e) => {
 /* keyword-graph anzeigen */
 btnShowKeywords.addEventListener('click', (e) => {
   e.preventDefault();
-  fetch('http://localhost:8000/getKeywords')
+  fetch('http://localhost:8000/getKeywordList')
     .then(response => response.json())
     .then(data => {
       const keywords = data.keywords || [];
       
-      /* erstelle nodes für jedes keyword */
+      /* nodes für jedes keyword */
       const nodes = keywords.map(keyword => ({
         id: keyword,
         name: keyword,
         isKeyword: true
       }));
       
-      /* keine links zwischen keywords */
+      /* keine links bei keywords! */
       const graphData = { nodes, links: [] };
       
+      /* nodeval einführen für die größen */
+      Graph.nodeVal(() => 1);
       Graph.graphData(graphData);
     })
     .catch(error => {
       console.error("Fehler beim Laden der Keywords:", error);
       alert("Konnte Keywords nicht laden.");
+    });
+});
+
+/* keyword cloud anzeigen */
+btnShowKeywordCloud.addEventListener('click', (e) => {
+  e.preventDefault();
+  fetch('http://localhost:8000/getKeywordCount')
+    .then(response => response.json())
+    .then(data => {
+      const keywordCounts = data.keywords || {};
+      
+      /* erstelle nodes mit val für größe basierend auf count */
+      const nodes = Object.entries(keywordCounts).map(([keyword, count]) => ({
+        id: keyword,
+        name: keyword,
+        val: Math.pow(count, 3),  // gerade auf kubik gesetzt
+        isKeyword: true
+      }));
+      
+      /* auch hier keine links */
+      const graphData = { nodes, links: [] };
+      
+      /* setze nodeVal BEVOR graphData geladen wird - DONT TOUCH THIS */
+      Graph.nodeVal(node => node.val || 1);
+      Graph.graphData(graphData);
+    })
+    .catch(error => {
+      console.error("Fehler beim Laden der Keyword Cloud:", error);
+      alert("Konnte Keyword Cloud nicht laden.");
     });
 });
 
@@ -191,9 +220,11 @@ fetch("http://localhost:8000/getWholeGraph")
       .graphData(graphData)
       .nodeLabel(node => node.teaches || node.name)
       .nodeAutoColorBy("id")
+      .nodeVal(() => 1)
       .linkDirectionalParticles(2)
       .linkDirectionalParticleSpeed(0.01)
       .onNodeClick(node => {
+        
         /* keyword-nodes triggern suche, normale nodes öffnen modal */
         if (node.isKeyword) {
           loadGraph(`http://localhost:8000/getExercisesByKeyword/${encodeURIComponent(node.name)}`);
