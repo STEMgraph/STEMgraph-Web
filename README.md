@@ -12,15 +12,7 @@
 
 ## Technology
 
-- **Frontend**: Vanilla JavaScript
+- **Frontend**: Vanilla JS
 - **Visualization**: [3d-force-graph](https://github.com/vasturiano/3d-force-graph)
 - **API**: FastAPI (STEMgraph-API)
 
-## API Endpoints
-
-```
-GET /getWholeGraph          - Complete graph
-GET /getKeywords            - All keywords
-GET /getExercisesByKeyword/{keyword}  - Exercises by keyword
-GET /getPathToExercise/{id} - Subgraph for exercise
-```
