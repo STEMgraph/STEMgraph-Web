@@ -52,12 +52,23 @@ function parseGraphData(data) {
     const id = item["@id"];
     
     if (!seen.has(id)) {
+      /* node-typ bestimmen */
+      let nodeType = 'normal';
+      const deps = item["dependsOn"] || [];
+      
+      if (deps.length === 0) {
+        nodeType = 'root';  // keine dependencies
+      } else if (item["dependsOnAlternatives"] || item["stg:hasAlternativeDependency"]) {
+        nodeType = 'or';  // hat irgendwelche OR dependencies
+      }
+      
       const node = {
         id: id,
         name: id,
         repo_link: "https://github.com/STEMgraph/" + id,
         teaches: item["teaches"] || null,
-        keywords: item["keywords"] || []
+        keywords: item["keywords"] || [],
+        type: nodeType
       };
       nodes.push(node);
       nodeMap.set(id, node);
@@ -66,6 +77,14 @@ function parseGraphData(data) {
       const existingNode = nodeMap.get(id);
       if (item["teaches"]) existingNode.teaches = item["teaches"];
       if (item["keywords"] && item["keywords"].length > 0) existingNode.keywords = item["keywords"];
+      
+      /* update type wenn mehr info vorhanden */
+      const deps = item["dependsOn"] || [];
+      if (deps.length === 0 && !existingNode.type) {
+        existingNode.type = 'root';
+      } else if ((item["dependsOnAlternatives"] || item["stg:hasAlternativeDependency"]) && existingNode.type !== 'root') {
+        existingNode.type = 'or';
+      }
     }
     
     (item["dependsOn"] || []).forEach(target => {
@@ -78,7 +97,8 @@ function parseGraphData(data) {
           name: targetId,
           repo_link: "https://github.com/STEMgraph/" + targetId,
           teaches: typeof target === 'object' ? target["teaches"] : null,
-          keywords: typeof target === 'object' ? (target["keywords"] || []) : []
+          keywords: typeof target === 'object' ? (target["keywords"] || []) : [],
+          type: 'normal'  // default, wird später ggf. überschrieben
         };
         nodes.push(node);
         nodeMap.set(targetId, node);
@@ -126,8 +146,13 @@ btnExplore.addEventListener('click', () => {
         closeModal();
         return;
       }
+      const graphData = parseGraphData(data);
+      /* alle nodes im subgraph bekommen gleiche gruppe = einfarbig */
+      graphData.nodes.forEach(n => n.group = 1);
+      
       Graph.nodeVal(() => 1);
-      Graph.graphData(parseGraphData(data));
+      Graph.nodeAutoColorBy('group');
+      Graph.graphData(graphData);
       closeModal();
     })
     .catch(error => {
@@ -164,7 +189,8 @@ btnShowKeywords.addEventListener('click', (e) => {
       const nodes = keywords.map(keyword => ({
         id: keyword,
         name: keyword,
-        isKeyword: true
+        isKeyword: true,
+        type: 'keyword'  // eigener typ für keywords
       }));
       
       /* keine links bei keywords! */
@@ -193,7 +219,8 @@ btnShowKeywordCloud.addEventListener('click', (e) => {
         id: keyword,
         name: keyword,
         val: Math.pow(count, 3),  // gerade auf kubik gesetzt
-        isKeyword: true
+        isKeyword: true,
+        type: 'keyword'
       }));
       
       /* auch hier keine links */
@@ -219,7 +246,11 @@ fetch("http://localhost:8000/getWholeGraph")
     Graph = ForceGraph3D()(document.getElementById("graph-container"))
       .graphData(graphData)
       .nodeLabel(node => node.teaches || node.name)
-      .nodeAutoColorBy("id")
+      .nodeColor(node => {
+        if (node.type === 'root') return '#ff0000';   // rot
+        if (node.type === 'or') return '#00ff00';     // grün
+        return '#0000ff';                              // blau (normal)
+      })
       .nodeVal(() => 1)
       .linkDirectionalParticles(2)
       .linkDirectionalParticleSpeed(0.01)
