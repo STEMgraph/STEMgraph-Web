@@ -1,267 +1,48 @@
 let Graph;
-let currentNode = null;
-localStorage.removeItem('graphHistory'); /* Fix für Reload */
 let graphHistory = [];
+let markedNodes = JSON.parse(localStorage.getItem('markedNodes') || '[]');
+let todoNodes = JSON.parse(localStorage.getItem('todoNodes') || '[]');
+let currentNode = null;
+const API_BASE = 'http://localhost:8000';
 
-/* modal- und search-elemente zuordnen */
+/* node-farbe helper */
+function getNodeColor(node) {
+  if (markedNodes.includes(node.id)) return "#75b3daff"; 
+  if (todoNodes.includes(node.id)) return "#fdc075ff";   
+  return "#e2e1e1ff";
+}
+
+function getRandomColor() {
+  const hue = Math.floor(Math.random() * 360);
+  return `hsl(${hue}, 70%, 60%)`;
+}
+
+/* dom-zuweisung für event handler */
 const modal = document.getElementById('node-modal');
+const statisticsModal = document.getElementById('statistics-modal');
+const helpModal = document.getElementById('help-modal');
 const modalTitle = document.getElementById('modal-title');
 const modalId = document.getElementById('modal-id');
 const modalKeywords = document.getElementById('modal-keywords');
 const btnExplore = document.getElementById('btn-explore');
 const btnGithub = document.getElementById('btn-github');
-const btnClose = document.getElementById('btn-close');
+const btnMarkNode = document.getElementById('btn-marknode');
+const btnTodoNode = document.getElementById('btn-todonode');
+const btnBack = document.getElementById('btn-back');
 const searchForm = document.getElementById('search-form');
 const keywordInput = document.getElementById('keywordsearch');
 const resetLink = document.getElementById('reset-graph');
 const btnShowKeywords = document.getElementById('btn-show-keywords');
 const btnShowKeywordCloud = document.getElementById('btn-show-keywordcloud');
-const btnBack = document.getElementById('btn-back');
+const btnShowTodo = document.getElementById('btn-show-todo');
+const btnShowStatistics = document.getElementById('btn-show-statistics');
+const btnShowHelp = document.getElementById('btn-show-help');
 const btnZoomReset = document.getElementById('btn-zoom-reset');
 
-
-/* modal kram*/
-function openModal(node) {
-  currentNode = node;
-  modalTitle.textContent = node.teaches || 'Kein Topic';
-  modalId.textContent = node.name;
-  modalKeywords.innerHTML = '';
-  if (node.keywords && node.keywords.length > 0) {
-    node.keywords.forEach(keyword => {
-      const span = document.createElement('span');
-      span.textContent = keyword;
-      modalKeywords.appendChild(span);
-    });
-  } else {
-    modalKeywords.textContent = 'Keine Keywords';
-  }
-
-  modal.classList.remove('hidden');
-}
-
-function closeModal() {
-  modal.classList.add('hidden');
-  currentNode = null;
-}
-
-/* api-response parsen */
-function parseGraphData(data) {
-  const nodes = [];
-  const links = [];
-  const seen = new Set();
-  const nodeMap = new Map();
-  const graphItems = Array.isArray(data["@graph"]) ? data["@graph"] : [data["@graph"]];
-
-  function processItem(item) {
-    const id = item["@id"];
-    
-    if (!seen.has(id)) {
-
-      const node = {
-        id: id,
-        name: id,
-        repo_link: "https://github.com/STEMgraph/" + id,
-        teaches: item["teaches"] || null,
-        keywords: item["keywords"] || []
-      };
-
-      nodes.push(node);
-      nodeMap.set(id, node);
-      seen.add(id);
-
-    } else {
-
-      const existingNode = nodeMap.get(id);
-      if (item["teaches"]) existingNode.teaches = item["teaches"];
-      if (item["keywords"] && item["keywords"].length > 0) existingNode.keywords = item["keywords"];
-    }
-    
-    (item["dependsOn"] || []).forEach(target => {
-      const targetId = typeof target === 'string' ? target : target["@id"];
-      links.push({ source: id, target: targetId });
-      
-      if (!seen.has(targetId)) {
-
-        const node = {
-          id: targetId,
-          name: targetId,
-          repo_link: "https://github.com/STEMgraph/" + targetId,
-          teaches: typeof target === 'object' ? target["teaches"] : null,
-          keywords: typeof target === 'object' ? (target["keywords"] || []) : []
-        };
-
-        nodes.push(node);
-        nodeMap.set(targetId, node);
-        seen.add(targetId);
-      }
-      
-      if (typeof target === 'object' && target["@id"]) {
-        processItem(target);
-      }
-    });
-  }
-
-  graphItems.forEach(item => processItem(item));
-  return { nodes, links };
-}
-
-/* history management */
-function pushHistory(apiUrl) {
-  graphHistory.push(apiUrl);
-  localStorage.setItem('graphHistory', JSON.stringify(graphHistory));
-  updateBackButton();
-}
-
-/* graph mit den geparsten daten laden*/
-function loadGraph(url, addToHistory = true) {
-
-  if (addToHistory) {
-    pushHistory(url);
-  }
-
-  fetch(url)
-    .then(response => response.json())
-    .then(data => {
-      const graphData = parseGraphData(data);
-      Graph.nodeVal(() => 1);
-      Graph.graphData(graphData);
-      Graph.nodeAutoColorBy("id");
-    })
-    .catch(error => {
-      console.error("Fehler beim Laden:", error);
-      alert("Konnte Daten nicht laden.");
-    });
-}
-
-/* event-listener für modal-buttons */
-btnClose.addEventListener('click', closeModal);
-btnExplore.addEventListener('click', () => {
-  if (!currentNode) return;
-  
-  /* api-call zum subgraph + neuaufbau*/
-  const apiUrl = `http://localhost:8000/getPathToExercise/${currentNode.id}`;
-  
-  pushHistory(apiUrl);
-
-  fetch(apiUrl)
-    .then(response => response.json())
-    .then(data => {
-      if (!data["@graph"]) {
-        alert("Keine Daten für diesen Node gefunden!");
-        closeModal();
-        return;
-      }
-      const graphData = parseGraphData(data);
-
-      Graph.nodeVal(() => 1);
-      Graph.nodeAutoColorBy('id');
-      Graph.graphData(graphData);
-
-      closeModal();
-    })
-    .catch(error => {
-      console.error("Fehler beim Laden des Subgraphen:", error);
-      alert("Konnte Subgraph nicht laden.");
-    });
-});
-
-btnGithub.addEventListener('click', () => {
-  if (currentNode && currentNode.repo_link && currentNode.repo_link !== "unknown") {
-    window.open(currentNode.repo_link, "_blank");
-    closeModal();
-  }
-});
-
-/* keyword-suche */
-searchForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const keyword = keywordInput.value.trim();
-  if (keyword) {
-    const url = `http://localhost:8000/getExercisesByKeyword/${encodeURIComponent(keyword)}`;
-    pushHistory(url);
-    loadGraph(url, false);
-  }
-});
-
-/* keyword-graph anzeigen */
-btnShowKeywords.addEventListener('click', (e) => {
-  e.preventDefault();
-  const url = 'http://localhost:8000/getKeywordList';
-  pushHistory(url);
-
-  fetch(url)
-    .then(response => response.json())
-    .then(data => {
-      const keywords = data.keywords || [];
-      
-      const nodes = keywords.map(keyword => ({
-        id: keyword,
-        name: keyword,
-        isKeyword: true
-      }));
-      
-      const graphData = { nodes, links: [] };
-      
-      Graph.nodeVal(() => 1);
-      Graph.graphData(graphData);
-      Graph.nodeAutoColorBy("id");
-    })
-    .catch(error => {
-      console.error("Fehler beim Laden der Keywords:", error);
-      alert("Konnte Keywords nicht laden.");
-    });
-});
-
-/* keyword cloud anzeigen */
-btnShowKeywordCloud.addEventListener('click', (e) => {
-  e.preventDefault();
-  const url = 'http://localhost:8000/getKeywordCount';
-  pushHistory(url);
-
-  fetch(url)
-    .then(response => response.json())
-    .then(data => {
-      const keywordCounts = data.keywords || {};
-      
-      const nodes = Object.entries(keywordCounts).map(([keyword, count]) => ({
-        id: keyword,
-        name: keyword,
-        val: Math.pow(count, 3),
-        isKeyword: true
-      }));
-      
-      const graphData = { nodes, links: [] };
-      
-      Graph.nodeVal(node => node.val || 1);
-      Graph.graphData(graphData);
-      Graph.nodeAutoColorBy("id");
-    })
-    .catch(error => {
-      console.error("Fehler beim Laden der Keyword Cloud:", error);
-      alert("Konnte Keyword Cloud nicht laden.");
-    });
-});
-
-/* zoom reset button */
-btnZoomReset.addEventListener('click', (e) => {
-  e.preventDefault();
-  if (Graph) {
-    Graph.zoomToFit(400);
-  }
-});
-
-/* schritt zurück */
-function goBack() {
-  if (graphHistory.length <= 1) return;
-  
-  graphHistory.pop();
-  const previousUrl = graphHistory[graphHistory.length - 1];
-  
-  if (previousUrl) {
-    loadGraph(previousUrl, false);
-  }
-  
-  localStorage.setItem('graphHistory', JSON.stringify(graphHistory));
+/* history funktionen */
+function initHistory() {
+  graphHistory = [];
+  localStorage.removeItem('graphHistory');
   updateBackButton();
 }
 
@@ -273,58 +54,368 @@ function updateBackButton() {
   }
 }
 
-btnBack.addEventListener('click', (e) => {
+function pushHistory(apiUrl) {
+  graphHistory.push(apiUrl);
+  localStorage.setItem('graphHistory', JSON.stringify(graphHistory));
+  updateBackButton();
+}
+
+function goBack() {
+  if (graphHistory.length <= 1) return;
+  graphHistory.pop();
+  const previousUrl = graphHistory[graphHistory.length - 1];
+  if (previousUrl) loadGraph(previousUrl, false);
+  localStorage.setItem('graphHistory', JSON.stringify(graphHistory));
+  updateBackButton();
+}
+
+/* node-modal */
+function openModal(node) {
+  currentNode = node;
+  modalTitle.textContent = node.teaches || 'Kein Topic';
+  modalId.textContent = node.name;
+
+  modalKeywords.innerHTML = '';
+  if (node.keywords && node.keywords.length > 0) {
+    node.keywords.forEach(keyword => {
+      const span = document.createElement('span');
+      span.textContent = keyword;
+      modalKeywords.appendChild(span);
+    });
+  } else {
+    modalKeywords.textContent = 'Keine Keywords';
+  }
+
+  if (markedNodes.includes(node.id)) {
+    btnMarkNode.textContent = "Mark lesson as not completed";
+  } else {
+    btnMarkNode.textContent = "Mark lesson as completed";
+  }
+
+  if (todoNodes.includes(node.id)) {
+    btnTodoNode.textContent = "Remove lesson from to-do list";
+  } else {
+    btnTodoNode.textContent = "Put lesson on your To-Do list";
+  }
+
+  modal.classList.remove('hidden');
+}
+
+function openStatisticsModal() {
+  document.getElementById('stat-marked-count').textContent = markedNodes.length;
+  document.getElementById('stat-todo-count').textContent = todoNodes.length;
+  
+  fetch(`${API_BASE}/getStatistics`)
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('stat-node-count').textContent = data.nodeCount || 0;
+      document.getElementById('stat-keyword-count').textContent = data.keywordCountDistinct || 0;
+    });
+  
+  statisticsModal.classList.remove('hidden');
+}
+
+function openHelpModal() {
+  helpModal.classList.remove('hidden');
+}
+
+function closeModal() {
+  modal.classList.add('hidden');
+  statisticsModal.classList.add('hidden');
+  helpModal.classList.add('hidden');
+  currentNode = null;
+}
+
+/* event listener modal-buttons */
+document.querySelectorAll('.btn-close').forEach(btn => {
+  btn.addEventListener('click', closeModal);
+});
+
+btnBack.addEventListener('click', e => {
   e.preventDefault();
   goBack();
 });
 
-/* initialer load des kompletten graphs von der api */
-const firstUrl = "http://localhost:8000/getWholeGraph";
-pushHistory(firstUrl);
+btnShowStatistics.addEventListener('click', e => {
+  e.preventDefault();
+  openStatisticsModal();
+});
 
-fetch(firstUrl)
-  .then(response => response.json())
+btnShowHelp.addEventListener('click', e => {
+  e.preventDefault();
+  openHelpModal();
+});
+
+/* node markieren  */
+btnMarkNode.addEventListener('click', () => {
+  if (!currentNode) return;
+
+  if (markedNodes.includes(currentNode.id)) {
+    markedNodes = markedNodes.filter(id => id !== currentNode.id);
+    btnMarkNode.textContent = "Mark lesson as completed";
+  } else {
+    markedNodes.push(currentNode.id);
+    btnMarkNode.textContent = "Mark lesson as not completed";
+  }
+
+  localStorage.setItem('markedNodes', JSON.stringify(markedNodes));
+  Graph.nodeColor(Graph.nodeColor());
+});
+
+/* node todo */
+btnTodoNode.addEventListener('click', () => {
+  if (!currentNode) return;
+
+  if (todoNodes.includes(currentNode.id)) {
+    todoNodes = todoNodes.filter(id => id !== currentNode.id);
+    btnTodoNode.textContent = "Put lesson on your To-Do list";
+  } else {
+    todoNodes.push(currentNode.id);
+    btnTodoNode.textContent = "Remove lesson from to-do list";
+  }
+
+  localStorage.setItem('todoNodes', JSON.stringify(todoNodes));
+  Graph.nodeColor(Graph.nodeColor());
+});
+
+/* subgraph */
+btnExplore.addEventListener('click', () => {
+  if (!currentNode) return;
+
+  Graph.nodeAutoColorBy(null);
+  const apiUrl = `${API_BASE}/getPathToExercise/${currentNode.id}`;
+  loadGraph(apiUrl, true);
+  closeModal();
+});
+
+/* link zur lesson */
+btnGithub.addEventListener('click', () => {
+  if (currentNode && currentNode.repo_link && currentNode.repo_link !== "unknown") {
+    window.open(currentNode.repo_link, "_blank");
+    closeModal();
+  }
+});
+
+/* keyword-suche */
+searchForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const keyword = keywordInput.value.trim();
+  if (keyword) {
+    Graph.nodeAutoColorBy(null);
+    loadGraph(`${API_BASE}/getExercisesByKeyword/${encodeURIComponent(keyword)}`);
+  }
+});
+
+/* keyword liste anzeigen */
+btnShowKeywords.addEventListener('click', e => {
+  e.preventDefault();
+  if (!Graph) return;
+
+  const apiUrl = `${API_BASE}/getKeywordList`;
+
+  fetch(apiUrl)
+    .then(r => r.json())
+    .then(data => {
+      const keywords = data.keywords || [];
+      
+      const nodes = keywords.map(keyword => ({
+        id: keyword,
+        name: keyword,
+        color: getRandomColor(),
+        isKeyword: true
+      }));
+
+      const graphData = { nodes, links: [] };
+
+      Graph.nodeAutoColorBy(null);
+      Graph.nodeColor(node => node.color || getNodeColor(node));
+      Graph.nodeVal(() => 1);
+      Graph.graphData(graphData);
+
+      setTimeout(() => Graph.zoomToFit(400, 80), 100);
+      pushHistory(apiUrl);
+    });
+});
+
+/* keyword cloud */
+btnShowKeywordCloud.addEventListener('click', (e) => {
+  e.preventDefault();
+  if (!Graph) return;
+
+  const apiUrl = `${API_BASE}/getKeywordCount`;
+
+  fetch(apiUrl)
+    .then(r => r.json())
+    .then(data => {
+      const keywordCounts = data.keywords || {};
+
+      const nodes = Object.entries(keywordCounts).map(([keyword, count]) => ({
+        id: keyword,
+        name: keyword,
+        val: Math.pow(count, 3),
+        color: getRandomColor(),
+        isKeyword: true
+      }));
+
+      const graphData = { nodes, links: [] };
+
+      Graph.nodeAutoColorBy(null);
+      Graph.nodeColor(node => node.color || getNodeColor(node));
+      Graph.nodeVal(node => node.val || 1);
+      Graph.graphData(graphData);
+
+      setTimeout(() => Graph.zoomToFit(400, 80), 100);
+      pushHistory(apiUrl);
+    });
+});
+
+/* to-do graph mit dependencies */
+btnShowTodo.addEventListener('click', async (e) => {
+  e.preventDefault();
+  if (!Graph || todoNodes.length === 0) {
+    alert('Keine To-Do Lessons vorhanden!');
+    return;
+  }
+
+  try {
+    // versuche dependencies zu laden
+    const pathPromises = todoNodes.map(nodeId =>
+      fetch(`${API_BASE}/getPathToExercise/${nodeId}`)
+        .then(r => r.json())
+    );
+
+    const pathResults = await Promise.all(pathPromises);
+
+    // alle nodes und links zusammenführen
+    const allNodes = new Map();
+    const allLinks = [];
+
+    pathResults.forEach(data => {
+      const graphData = parseGraphData(data);
+      
+      graphData.nodes.forEach(node => {
+        if (!allNodes.has(node.id)) {
+          allNodes.set(node.id, node);
+        }
+      });
+
+      graphData.links.forEach(link => {
+        const linkId = `${link.source}-${link.target}`;
+        if (!allLinks.find(l => `${l.source}-${l.target}` === linkId)) {
+          allLinks.push(link);
+        }
+      });
+    });
+
+    const combinedGraph = {
+      nodes: Array.from(allNodes.values()),
+      links: allLinks
+    };
+
+    Graph.nodeAutoColorBy(null);
+    Graph.nodeColor(getNodeColor);
+    Graph.nodeVal(() => 1);
+    Graph.graphData(combinedGraph);
+
+    setTimeout(() => Graph.zoomToFit(400, 80), 100);
+  } catch (error) {
+    console.error('Fehler beim Laden des To-Do Graphs:', error);
+    alert('Fehler beim Laden des To-Do Graphs');
+  }
+});
+
+/* zoom reset */
+btnZoomReset.addEventListener('click', e => {
+  e.preventDefault();
+  if (!Graph) return;
+  Graph.zoomToFit(400, 80);
+});
+
+/* initialer load */
+const initialUrl = `${API_BASE}/getWholeGraph`;
+
+initHistory();
+
+fetch(initialUrl)
+  .then(r => r.json())
   .then(data => {
     const graphData = parseGraphData(data);
 
     Graph = ForceGraph3D()(document.getElementById("graph-container"))
       .graphData(graphData)
       .nodeLabel(node => node.teaches || node.name)
-      .nodeAutoColorBy("id")
+      .nodeColor(getNodeColor)
       .nodeVal(() => 1)
       .linkDirectionalParticles(2)
       .linkDirectionalParticleSpeed(0.01)
       .onNodeClick(node => {
-
-        /* keyword-nodes triggern suche, normale nodes öffnen modal */
         if (node.isKeyword) {
-          const url = `http://localhost:8000/getExercisesByKeyword/${encodeURIComponent(node.name)}`;
-          pushHistory(url);
-          loadGraph(url, false);
+          Graph.nodeAutoColorBy(null);
+          loadGraph(`${API_BASE}/getExercisesByKeyword/${encodeURIComponent(node.name)}`);
         } else {
           openModal(node);
         }
       });
 
-    updateBackButton();
-  })
-  .catch(error => console.error("Fehler:s", error));
+    pushHistory(initialUrl);
+    setTimeout(() => Graph.zoomToFit(400, 80), 200);
+  });
 
+/* keyword autocomplete */
+fetch(`${API_BASE}/getKeywordList`)
+  .then(r => r.json())
+  .then(data => {
+    const datalist = document.getElementById('keyword-suggestions');
+    (data.keywords || []).forEach(keyword => {
+      const option = document.createElement('option');
+      option.value = keyword;
+      datalist.appendChild(option);
+    });
+  });
 
-document.addEventListener('keydown', (e) => {
-
-  if (!modal.classList.contains('hidden') && e.key === 'Escape') {
-    closeModal();
+/* keyboard bindings */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (!modal.classList.contains('hidden') || 
+        !statisticsModal.classList.contains('hidden') || 
+        !helpModal.classList.contains('hidden')) {
+      closeModal();
+    }
   }
 
-  if (modal.classList.contains('hidden') && e.key === ' ') {
+  if (e.key === ' ' || e.code === 'Space') {
+    if (document.activeElement.tagName !== 'INPUT' && Graph) {
+      e.preventDefault();
+      Graph.zoomToFit(400, 80);
+    }
+  }
+
+ if (e.key === 'ArrowLeft' || (e.key === 'z' && e.ctrlKey)) {
+  if (document.activeElement.tagName !== 'INPUT' && graphHistory.length > 1) {
     e.preventDefault();
-    btnZoomReset.click();
+    goBack();
+  }
   }
 
-  if (modal.classList.contains('hidden') && e.key === 'ArrowLeft') {
+  if (e.key === 'F1') {
     e.preventDefault();
-    btnBack.click();
+    openHelpModal();
   }
-
 });
+
+/* query params */
+(function() {
+  const params = new URLSearchParams(window.location.search);
+
+  if (params.has('keyword')) {
+    const kw = params.get('keyword').trim();
+    if (kw) loadGraph(`${API_BASE}/getExercisesByKeyword/${encodeURIComponent(kw)}`);
+    return;
+  }
+
+  if (params.has('node')) {
+    const id = params.get('node').trim();
+    if (id) loadGraph(`${API_BASE}/getPathToExercise/${encodeURIComponent(id)}`);
+    return;
+  }
+})();
