@@ -3,7 +3,7 @@ let graphHistory = [];
 let markedNodes = JSON.parse(localStorage.getItem('markedNodes') || '[]');
 let todoNodes = JSON.parse(localStorage.getItem('todoNodes') || '[]');
 let currentNode = null;
-const API_BASE = 'http://localhost:8000';
+const API_BASE = 'https://stemgraph-api.boekelmann.net';
 
 /* node-farbe helper */
 function getNodeColor(node) {
