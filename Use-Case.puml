@@ -1,0 +1,69 @@
+@startuml
+left to right direction
+
+actor Guest
+actor Student
+actor Teacher
+actor Admin
+
+Teacher --|> Student
+Admin --|> Teacher
+
+rectangle STEMgraph {
+  usecase "Login/Registration" as Login
+  usecase "View Whole Graph" as ViewGraph
+  usecase "Select ToDo/Finished Node" as SelectNode
+  usecase "Navigation" as Navigate
+
+  ' Guest
+  usecase "Mark as ToDo/Finished (LocalStorage)" as MarkTemp
+  usecase "Save to LocalStorage" as SaveLocal
+  usecase "Temporary Stats" as StatsTemp
+
+  ' Student
+  usecase "Mark as ToDo/Finished (Keycloak)" as MarkPers
+  usecase "Save to Keycloak" as SaveKeycloak
+  usecase "View Profile" as ViewProfile
+  usecase "Persistent Stats" as StatsPers
+  usecase "Migrate LocalStorage" as Migrate
+
+  ' Teacher
+  usecase "Create Learning Path" as CreatePath
+  usecase "Edit Learning Path" as EditPath
+  usecase "View Student Progress" as ViewStudentProgress
+
+  ' Admin
+  usecase "Update Graph" as UpdateGraph
+  usecase "Manage Nodes" as ManageNodes
+  usecase "Manage Users" as ManageUsers
+  
+  ' Relations
+  ViewGraph ..> Navigate : <<include>>
+  ViewGraph ..> SelectNode : <<include>>
+  MarkTemp ..> SaveLocal : <<include>>
+  MarkPers ..> SaveKeycloak : <<include>>
+  ViewProfile ..> StatsPers : <<include>>
+
+  Migrate ..> MarkPers : <<extend>>
+}
+
+' Associations
+Guest --> Login
+Guest --> ViewGraph
+Guest --> MarkTemp
+Guest --> StatsTemp
+
+Student --> ViewGraph
+Student --> MarkPers
+Student --> ViewProfile
+Student --> Migrate
+
+Teacher --> CreatePath
+Teacher --> EditPath
+Teacher --> ViewStudentProgress
+
+Admin --> UpdateGraph
+Admin --> ManageNodes
+Admin --> ManageUsers
+
+@enduml
