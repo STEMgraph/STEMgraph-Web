@@ -1,9 +1,69 @@
+const KEYCLOAK_BASE = 'http://localhost:9080';
+const API_BASE = 'https://stemgraph-api.boekelmann.net';
+
+const keycloak = new Keycloak({
+    url: KEYCLOAK_BASE,
+    realm: 'stemgraph',
+    clientId: 'stemgraph-web'
+});
+
+keycloak.init({
+    onLoad: 'check-sso'
+}).then(authenticated => {
+    const loginBtn = document.getElementById('btn-login');
+    const logoutBtn = document.getElementById('btn-logout');
+    const userGreeting = document.getElementById('user-greeting');
+    const usernameSpan = document.getElementById('username');
+    
+    if (authenticated) {
+    keycloak.loadUserProfile().then(profile => {
+        usernameSpan.textContent = profile.username || profile.email || 'User';
+    }).catch(() => {
+        usernameSpan.textContent = 'User';
+    });
+    
+    /* rollen-hierarchie aus token + hierarchie, da sonst alle default rolle */
+    const roles = keycloak.realmAccess?.roles || [];
+    let userRole = 'user';
+    if (roles.includes('admin')) userRole = 'admin';
+    else if (roles.includes('teacher')) userRole = 'teacher';
+    else if (roles.includes('student')) userRole = 'student';
+    document.getElementById('user-role').textContent = userRole;
+
+
+    loginBtn.style.display = 'none';
+    logoutBtn.style.display = 'block';
+    userGreeting.style.display = 'block';
+}
+});
+
+async function saveTodoNodes(nodes) {
+    try {
+        const response = await fetch(KEYCLOAK_BASE + '/realms/stemgraph/account', {
+            method: 'PUT',
+            headers: {
+                'Authorization': 'Bearer ' + keycloak.token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                attributes: {
+                    ToDoNodes: nodes
+                }
+            })
+        });
+        
+        console.log('Status:', response.status);
+        console.log('Response:', await response.text());
+    } catch (error) {
+        console.error('Fehler:', error);
+    }
+}
+
 let Graph;
 let graphHistory = [];
 let markedNodes = JSON.parse(localStorage.getItem('markedNodes') || '[]');
 let todoNodes = JSON.parse(localStorage.getItem('todoNodes') || '[]');
 let currentNode = null;
-const API_BASE = 'https://stemgraph-api.boekelmann.net';
 
 /* node-farbe helper */
 function getNodeColor(node) {
@@ -129,6 +189,14 @@ function closeModal() {
 /* event listener modal-buttons */
 document.querySelectorAll('.btn-close').forEach(btn => {
   btn.addEventListener('click', closeModal);
+});
+
+document.getElementById('btn-login').addEventListener('click', () => {
+    keycloak.login();
+});
+
+document.getElementById('btn-logout').addEventListener('click', () => {
+    keycloak.logout();
 });
 
 btnBack.addEventListener('click', e => {

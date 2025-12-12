@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>3D STEMgraph Webkram</title>
   <script src="https://unpkg.com/3d-force-graph"></script>
+  <script src="http://localhost:9080/js/keycloak.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -21,12 +22,22 @@
   <a href="#" id="btn-show-keywordcloud">Keyword Cloud</a>
   <a href="#" id="btn-show-statistics">Statistics</a>
   <a href="#" id="btn-show-help">Help</a>
-</br>
+ </br>
 <form id="search-form">
     <input type="text" id="keywordsearch" list="keyword-suggestions" placeholder="Find Keyword" required>
     <datalist id="keyword-suggestions"></datalist>
     <button type="submit">Search</button>
   </form>
+
+<div id="auth-section">
+  <div id="user-greeting" style="display: none; text-align: center; margin-bottom: 6px;">
+      Hi <span id="username"></span><br>
+      Your role: <span id="user-role"></span>
+  </div>
+  <button id="btn-login" class="auth-button">Login</button>
+  <button id="btn-logout" class="auth-button" style="display: none;">Logout</button>
+</div>
+
 <div id="menu-bottom">
   <table id="menu-table">
     <tr>
@@ -36,7 +47,7 @@
       <td style="width: 40%; text-align: right;">
                <a href="#" id="btn-zoom-reset">Reset</a>
       </td>
-      <td style="width: 20%;; test-align: right"></td>
+      <td style="width: 20%; text-align: right"></td>
     </tr>
   </table>
 </div>
