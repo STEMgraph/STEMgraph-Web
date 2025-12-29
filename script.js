@@ -1,4 +1,4 @@
-const KEYCLOAK_BASE = 'http://localhost:9080';
+const KEYCLOAK_BASE = 'https:/KEYCLOAKURL/;
 const API_BASE = 'https://stemgraph-api.boekelmann.net';
 
 const keycloak = new Keycloak({
@@ -64,17 +64,101 @@ let graphHistory = [];
 let markedNodes = JSON.parse(localStorage.getItem('markedNodes') || '[]');
 let todoNodes = JSON.parse(localStorage.getItem('todoNodes') || '[]');
 let currentNode = null;
+let startNodeIds = new Set();
+let endNodeIds = new Set();
+
+async function loadStartEndNodes() {
+  try {
+    const [startRes, endRes] = await Promise.all([
+      fetch(`${API_BASE}/getStartNodes`),
+      fetch(`${API_BASE}/getEndNodes`)
+    ]);
+    const startData = await startRes.json();
+    const endData = await endRes.json();
+
+    startNodeIds.clear();
+    endNodeIds.clear();
+
+    (startData.nodes || []).forEach(node => startNodeIds.add(node.id));
+    (endData.nodes || []).forEach(node => endNodeIds.add(node.id));
+  } catch (e) {
+    console.error("Error loading start/end nodes:", e);
+  }
+}
 
 /* node-farbe helper */
 function getNodeColor(node) {
-  if (markedNodes.includes(node.id)) return "#75b3daff"; 
-  if (todoNodes.includes(node.id)) return "#fdc075ff";   
-  return "#e2e1e1ff";
+  if (markedNodes.includes(node.id)) return "#75b3da"; 
+  if (todoNodes.includes(node.id)) return "#fdc075";   
+  return "#e2e1e1";
+}
+
+const NODE_COLORS = {
+  start: "#4156cc",
+  end: "#ff6600",
+  normal: "#888888",
+  completed: "#4ad94a",
+  todo: "#cfd94a"
+};
+
+function createNodeThreeObject(node) {
+  let color;
+  if (node.isKeyword) {
+    color = node.color || NODE_COLORS.normal;
+  } else if (startNodeIds.has(node.id)) {
+    color = NODE_COLORS.start;
+  } else if (endNodeIds.has(node.id)) {
+    color = NODE_COLORS.end;
+  } else {
+    color = node.color || getNodeColor(node);
+  }
+
+  const material = new THREE.MeshBasicMaterial({
+    color: color,
+    transparent: true,
+    opacity: 0.85
+  });
+
+  const size = node.val ? Math.cbrt(node.val) * 0.8 : 5;
+
+  let geometry;
+
+  if (node.isKeyword) {
+    geometry = new THREE.SphereGeometry(size, 16, 16);
+  }
+  else if (startNodeIds.has(node.id)) {
+    geometry = new THREE.ConeGeometry(5, 10, 8);
+  }
+  else if (endNodeIds.has(node.id)) {
+    geometry = new THREE.BoxGeometry(8, 8, 8);
+  }
+  else {
+    geometry = new THREE.SphereGeometry(5, 16, 16);
+  }
+
+  return new THREE.Mesh(geometry, material);
 }
 
 function getRandomColor() {
   const hue = Math.floor(Math.random() * 360);
   return `hsl(${hue}, 70%, 60%)`;
+}
+
+/* !!!!!MISSING NODES FIX!!! */
+function sanitizeGraphData(data) {
+  const nodeIds = new Set(data.nodes.map(n => n.id));
+  const missingNodes = new Set();
+  
+  data.links.forEach(link => {
+    if (!nodeIds.has(link.source)) missingNodes.add(link.source);
+    if (!nodeIds.has(link.target)) missingNodes.add(link.target);
+  });
+  
+  missingNodes.forEach(id => {
+    data.nodes.push({ id, name: id, teaches: 'Unknown' });
+  });
+  
+  return data;
 }
 
 /* dom-zuweisung für event handler */
@@ -192,7 +276,9 @@ document.querySelectorAll('.btn-close').forEach(btn => {
 });
 
 document.getElementById('btn-login').addEventListener('click', () => {
-    keycloak.login();
+    keycloak.login({
+        redirectUri: 'https://stemgraph.boekelmann.net/'
+    });
 });
 
 document.getElementById('btn-logout').addEventListener('click', () => {
@@ -328,9 +414,9 @@ btnShowKeywordCloud.addEventListener('click', (e) => {
       const graphData = { nodes, links: [] };
 
       Graph.nodeAutoColorBy(null);
-      Graph.nodeColor(node => node.color || getNodeColor(node));
-      Graph.nodeVal(node => node.val || 1);
+      Graph.nodeThreeObject(null);
       Graph.graphData(graphData);
+      Graph.nodeThreeObject(createNodeThreeObject);
 
       setTimeout(() => Graph.zoomToFit(400, 80), 100);
       pushHistory(apiUrl);
@@ -346,7 +432,6 @@ btnShowTodo.addEventListener('click', async (e) => {
   }
 
   try {
-    // versuche dependencies zu laden
     const pathPromises = todoNodes.map(nodeId =>
       fetch(`${API_BASE}/getPathToExercise/${nodeId}`)
         .then(r => r.json())
@@ -354,20 +439,19 @@ btnShowTodo.addEventListener('click', async (e) => {
 
     const pathResults = await Promise.all(pathPromises);
 
-    // alle nodes und links zusammenführen
     const allNodes = new Map();
     const allLinks = [];
 
     pathResults.forEach(data => {
-      const graphData = parseGraphData(data);
+      const sanitized = sanitizeGraphData(data);
       
-      graphData.nodes.forEach(node => {
+      sanitized.nodes.forEach(node => {
         if (!allNodes.has(node.id)) {
           allNodes.set(node.id, node);
         }
       });
 
-      graphData.links.forEach(link => {
+      sanitized.links.forEach(link => {
         const linkId = `${link.source}-${link.target}`;
         if (!allLinks.find(l => `${l.source}-${l.target}` === linkId)) {
           allLinks.push(link);
@@ -399,35 +483,72 @@ btnZoomReset.addEventListener('click', e => {
   Graph.zoomToFit(400, 80);
 });
 
+/* loadGraph funktion */
+function loadGraph(url, addToHistory = true) {
+  fetch(url)
+    .then(response => {
+      if (!response.ok) {
+        if (response.status === 404) {
+          alert("Keine Ergebnisse gefunden. Bitte überprüfe deine Suchanfrage.");
+        } else {
+          alert("Fehler beim Laden der Daten von der API.");
+        }
+        return null;
+      }
+      return response.json();
+    })
+    .then(data => {
+      if (!data) return;
+      
+      data = sanitizeGraphData(data);
+      
+      Graph.nodeAutoColorBy(null);
+      Graph.nodeColor(getNodeColor);
+      Graph.nodeVal(() => 1);
+      Graph.graphData(data);
+      
+      setTimeout(() => {
+        Graph.zoomToFit(400, 80);
+      }, 100);
+
+      if (addToHistory) pushHistory(url);
+    })
+    .catch(error => {
+      console.error("Fehler beim Laden:", error);
+    });
+}
+
 /* initialer load */
 const initialUrl = `${API_BASE}/getWholeGraph`;
 
 initHistory();
 
-fetch(initialUrl)
-  .then(r => r.json())
-  .then(data => {
-    const graphData = parseGraphData(data);
+loadStartEndNodes().then(() => {
+  fetch(initialUrl)
+    .then(r => r.json())
+    .then(data => {
+      data = sanitizeGraphData(data);
+      
+      Graph = ForceGraph3D()(document.getElementById("graph-container"))
+        .graphData(data)
+        .nodeLabel(node => node.teaches || node.name)
+        .nodeThreeObject(createNodeThreeObject)
+        .linkDirectionalParticles(3)
+        .linkDirectionalParticleWidth(4)
+        .linkDirectionalParticleSpeed(0.006)
+        .onNodeClick(node => {
+          if (node.isKeyword) {
+            Graph.nodeAutoColorBy(null);
+            loadGraph(`${API_BASE}/getExercisesByKeyword/${encodeURIComponent(node.name)}`);
+          } else {
+            openModal(node);
+          }
+        });
 
-    Graph = ForceGraph3D()(document.getElementById("graph-container"))
-      .graphData(graphData)
-      .nodeLabel(node => node.teaches || node.name)
-      .nodeColor(getNodeColor)
-      .nodeVal(() => 1)
-      .linkDirectionalParticles(2)
-      .linkDirectionalParticleSpeed(0.01)
-      .onNodeClick(node => {
-        if (node.isKeyword) {
-          Graph.nodeAutoColorBy(null);
-          loadGraph(`${API_BASE}/getExercisesByKeyword/${encodeURIComponent(node.name)}`);
-        } else {
-          openModal(node);
-        }
-      });
-
-    pushHistory(initialUrl);
-    setTimeout(() => Graph.zoomToFit(400, 80), 200);
-  });
+      pushHistory(initialUrl);
+      setTimeout(() => Graph.zoomToFit(400, 80), 200);
+    });
+});
 
 /* keyword autocomplete */
 fetch(`${API_BASE}/getKeywordList`)
