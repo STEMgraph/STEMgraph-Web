@@ -119,7 +119,7 @@ function createNodeThreeObject(node) {
     opacity: 0.85
   });
 
-  const size = node.val ? Math.cbrt(node.val) * 0.8 : 5;
+  const size = node.val ? Math.cbrt(node.val) * 2 : 5;
 
   let geometry;
 
