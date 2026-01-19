@@ -217,7 +217,7 @@ function goBack() {
 function openModal(node) {
   currentNode = node;
   modalTitle.textContent = node.teaches || 'Kein Topic';
-  modalId.textContent = node.name;
+  modalId.textContent = node.id;
 
   modalKeywords.innerHTML = '';
   if (node.keywords && node.keywords.length > 0) {
@@ -344,8 +344,9 @@ btnExplore.addEventListener('click', () => {
 
 /* link zur lesson */
 btnGithub.addEventListener('click', () => {
-  if (currentNode && currentNode.repo_link && currentNode.repo_link !== "unknown") {
-    window.open(currentNode.repo_link, "_blank");
+  if (currentNode && currentNode.id) {
+    const repoUrl = "https://github.com/STEMgraph/" + currentNode.id;
+    window.open(repoUrl, "_blank");
     closeModal();
   }
 });
