@@ -1,4 +1,4 @@
-const KEYCLOAK_BASE = 'https:/KEYCLOAKURL/;
+const KEYCLOAK_BASE = 'https://KEYCLOAKURL/';
 const API_BASE = 'https://stemgraph-api.boekelmann.net';
 
 const keycloak = new Keycloak({
@@ -119,7 +119,7 @@ function createNodeThreeObject(node) {
     opacity: 0.85
   });
 
-  const size = node.val ? Math.cbrt(node.val) * 0.8 : 5;
+  const size = node.val ? Math.cbrt(node.val) * 2 : 5;
 
   let geometry;
 
@@ -182,6 +182,14 @@ const btnShowTodo = document.getElementById('btn-show-todo');
 const btnShowStatistics = document.getElementById('btn-show-statistics');
 const btnShowHelp = document.getElementById('btn-show-help');
 const btnZoomReset = document.getElementById('btn-zoom-reset');
+
+/* mobile navigation */
+const hamburgerBtn = document.getElementById('hamburger-btn');
+const menu = document.getElementById('menu');
+const bottomHome = document.getElementById('bottom-home');
+const bottomTodo = document.getElementById('bottom-todo');
+const bottomStats = document.getElementById('bottom-stats');
+const bottomHelp = document.getElementById('bottom-help');
 
 /* history funktionen */
 function initHistory() {
@@ -424,9 +432,8 @@ btnShowKeywordCloud.addEventListener('click', (e) => {
     });
 });
 
-/* to-do graph mit dependencies */
-btnShowTodo.addEventListener('click', async (e) => {
-  e.preventDefault();
+/* shared to-do graph loading function */
+async function loadTodoGraph() {
   if (!Graph || todoNodes.length === 0) {
     alert('Keine To-Do Lessons vorhanden!');
     return;
@@ -445,7 +452,7 @@ btnShowTodo.addEventListener('click', async (e) => {
 
     pathResults.forEach(data => {
       const sanitized = sanitizeGraphData(data);
-      
+
       sanitized.nodes.forEach(node => {
         if (!allNodes.has(node.id)) {
           allNodes.set(node.id, node);
@@ -475,6 +482,12 @@ btnShowTodo.addEventListener('click', async (e) => {
     console.error('Fehler beim Laden des To-Do Graphs:', error);
     alert('Fehler beim Laden des To-Do Graphs');
   }
+}
+
+/* to-do graph - menu button */
+btnShowTodo.addEventListener('click', async (e) => {
+  e.preventDefault();
+  await loadTodoGraph();
 });
 
 /* zoom reset */
@@ -482,6 +495,47 @@ btnZoomReset.addEventListener('click', e => {
   e.preventDefault();
   if (!Graph) return;
   Graph.zoomToFit(400, 80);
+});
+
+/* hamburger menu toggle */
+hamburgerBtn.addEventListener('click', () => {
+  menu.classList.toggle('open');
+  hamburgerBtn.classList.toggle('active');
+});
+
+/* close menu when clicking outside */
+document.addEventListener('click', e => {
+  if (!menu.contains(e.target) && !hamburgerBtn.contains(e.target)) {
+    menu.classList.remove('open');
+    hamburgerBtn.classList.remove('active');
+  }
+});
+
+/* bottom bar navigation */
+bottomHome.addEventListener('click', e => {
+  e.preventDefault();
+  window.location.href = '/';
+});
+
+bottomTodo.addEventListener('click', async e => {
+  e.preventDefault();
+  menu.classList.remove('open');
+  hamburgerBtn.classList.remove('active');
+  await loadTodoGraph();
+});
+
+bottomStats.addEventListener('click', e => {
+  e.preventDefault();
+  menu.classList.remove('open');
+  hamburgerBtn.classList.remove('active');
+  openStatisticsModal();
+});
+
+bottomHelp.addEventListener('click', e => {
+  e.preventDefault();
+  menu.classList.remove('open');
+  hamburgerBtn.classList.remove('active');
+  openHelpModal();
 });
 
 /* loadGraph funktion */
