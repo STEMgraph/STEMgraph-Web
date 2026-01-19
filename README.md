@@ -5,18 +5,20 @@
 ## Features
 
 - **3D Force Graph** - Interactive 3D visualization of all learning resources
-- **ToDo Graph - A Subgraph including all your marked To-Do Nodes
+- **ToDo Graph** - A Subgraph including all your marked To-Do Nodes
 - **Keyword Search** - Find exercises by keywords
 - **Keyword Graph** - Visualize all available keywords as a graph
 - **Node Details** - Click on nodes for details (topic, keywords, dependencies)
 - **Subgraph Exploration** - Load relevant subgraphs for individual exercises
-- **Statistics - including all nodes/keywords and individually marked nodes
+- **Statistics** - including all nodes/keywords and individually marked nodes
+- **Identity** - so far just login via Keycloak
 
 ## Technology
 
 - **Frontend**: Vanilla JS
 - **Visualization**: [3d-force-graph](https://github.com/vasturiano/3d-force-graph)
 - **API**: FastAPI (STEMgraph-API)
+- **Keycloak**: Keycloak Server
 
 ## Usage 
 Have fun discovering the STEMgraph, a Cloud of all Keywords or search for a certain Keyword.
@@ -30,5 +32,7 @@ Have fun discovering the STEMgraph, a Cloud of all Keywords or search for a cert
 - F1 to open the help modal
 
 ## To-Do
-- Identity features
+- persistent saving of marked nodes (so far just localstorage)
 - more individual possibilities
+- learning paths
+- admin and user dashboard
