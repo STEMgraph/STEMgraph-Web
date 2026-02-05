@@ -7,84 +7,45 @@
   <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
   <script src="https://unpkg.com/3d-force-graph"></script>
   <script src="https://cdn.jsdelivr.net/npm/keycloak-js@latest/dist/keycloak.min.js"></script>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <h1>STEMgraph Web</h1>
 
 
   <div id="menu">
-  Welcome to STEMgraph. Choose your destination.
-  </br>
-  </br>
-  <a href="\">Whole Graph</a>
-  <a href="#" id="btn-show-todo">To-Do Graph</a>
-  <a href="#" id="btn-show-keywords">Keywords</a>
+  <div id="user-greeting">
+    Hi <span id="username">Visitor</span> <span class="user-role-label">(<span id="user-role">guest</span>)</span>
+  </div>
+
+  <a href="#" id="btn-whole-graph">Whole Graph</a>
   <a href="#" id="btn-show-keywordcloud">Keyword Cloud</a>
-  <a href="#" id="btn-show-statistics">Statistics</a>
+  <a href="#" id="btn-show-todo" class="auth-only">To-Do Graph</a>
+  <a href="#" id="btn-show-statistics" class="auth-only">Statistics</a>
   <a href="#" id="btn-show-help">Help</a>
- </br>
+
 <form id="search-form">
     <input type="text" id="keywordsearch" list="keyword-suggestions" placeholder="Find Keyword" required>
     <datalist id="keyword-suggestions"></datalist>
     <button type="submit">Search</button>
   </form>
 
+<div id="menu-actions">
+    <a href="#" id="btn-back">← Back</a>
+    <a href="#" id="btn-zoom-reset">Reset View</a>
+  </div>
+
 <div id="auth-section">
-  <div id="user-greeting" style="display: none; text-align: center; margin-bottom: 6px;">
-      Hi <span id="username"></span><br>
-      Your role: <span id="user-role"></span>
-  </div>
   <button id="btn-login" class="auth-button">Login</button>
-  <button id="btn-logout" class="auth-button" style="display: none;">Logout</button>
-</div>
-
-<div id="menu-bottom">
-  <table id="menu-table">
-    <tr>
-      <td style="width: 40%; text-align: left;">
-        <a href="#" id="btn-back">←Back</a> 
-      </td>
-      <td style="width: 40%; text-align: right;">
-               <a href="#" id="btn-zoom-reset">Reset</a>
-      </td>
-      <td style="width: 20%; text-align: right"></td>
-    </tr>
-  </table>
+  <button id="btn-logout" class="auth-button auth-only">Logout</button>
 </div>
   </div>
 
-  <div id="bottom-bar">
-    <button id="bottom-home" title="Whole Graph">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-      </svg>
-    </button>
-    <button id="bottom-todo" title="To-Do Graph">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M9 11l3 3L22 4"></path>
-        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-      </svg>
-    </button>
-    <button id="hamburger-btn" class="hamburger-button" title="Menu">
-      <span></span>
-      <span></span>
-      <span></span>
-    </button>
-    <button id="bottom-stats" title="Statistics">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M3 3v18h18"></path>
-        <path d="M18 17V9"></path>
-        <path d="M13 17V5"></path>
-        <path d="M8 17v-3"></path>
-      </svg>
-    </button>
-    <button id="bottom-help" title="Help">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <text x="12" y="18" text-anchor="middle" font-size="20" font-weight="bold" fill="currentColor" stroke="none">?</text>
-      </svg>
-    </button>
-  </div>
+  <button id="menu-toggle" title="Menu">
+    <img src="stemgraphlogo.svg" alt="Menu">
+    <span class="menu-arrow">‹</span>
+  </button>
+
 
   <div id="graph-container"></div>
   
@@ -109,8 +70,8 @@
       <div class="modal-buttons">
         <button id="btn-explore">Explore Graph</button>
         <button id="btn-github">Open lesson</button>
-        <button id="btn-marknode">Mark lesson as completed</button>
-         <button id="btn-todonode">Put lesson on your To-Do list</button>
+        <button id="btn-mark-finished">Mark lesson as completed</button>
+         <button id="btn-mark-todo">Put lesson on your To-Do list</button>
       </div>
     </div>
   </div>
@@ -130,7 +91,7 @@
     </p>
     <p><b>Personal:</b></p>
     <ul>
-      <li>Lessons completed: <span id="stat-marked-count">0</span></li>
+      <li>Lessons completed: <span id="stat-finished-count">0</span></li>
       <li>To-Do lessons: <span id="stat-todo-count">0</span></li>
     </ul>
 
@@ -171,7 +132,7 @@
 
 
 
-  <script src="script.js"></script>
+  <script type="module" src="src/main.js"></script>
 
 </body>
 </html>
