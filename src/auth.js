@@ -12,7 +12,8 @@ export function initAuth() {
         if (authenticated) {
             keycloak.loadUserProfile().then(profile => {
                 usernameSpan.textContent = profile.username || profile.email || 'User';
-            }).catch(() => {
+            }).catch(error => {
+                console.error('Failed to load user profile:', error);
                 usernameSpan.textContent = 'User';
             });
 

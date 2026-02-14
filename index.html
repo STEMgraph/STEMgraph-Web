@@ -14,31 +14,33 @@
 
 
   <div id="menu">
-  <div id="user-greeting">
-    Hi <span id="username">Visitor</span> <span class="user-role-label">(<span id="user-role">guest</span>)</span>
+    <div id="user-greeting">
+      Hello <span id="username">Visitor</span>
+      <span id="user-role-badge"><span id="user-role">guest</span></span>
+    </div>
+
+    <div class="menu-nav">
+      <a href="#" id="btn-whole-graph">Whole Graph</a>
+      <a href="#" id="btn-show-keywordcloud">Keyword Cloud</a>
+      <a href="#" id="btn-show-todo" class="auth-only">To-Do Graph</a>
+      <a href="#" id="btn-show-statistics" class="auth-only">Statistics</a>
+    </div>
+
+    <form id="search-form">
+      <input type="text" id="keywordsearch" list="keyword-suggestions" placeholder="Search keyword..." required>
+      <datalist id="keyword-suggestions"></datalist>
+    </form>
+
+    <div id="auth-section">
+      <button id="btn-login" class="auth-button">Login</button>
+      <button id="btn-logout" class="auth-button auth-only">Logout</button>
+    </div>
   </div>
 
-  <a href="#" id="btn-whole-graph">Whole Graph</a>
-  <a href="#" id="btn-show-keywordcloud">Keyword Cloud</a>
-  <a href="#" id="btn-show-todo" class="auth-only">To-Do Graph</a>
-  <a href="#" id="btn-show-statistics" class="auth-only">Statistics</a>
-  <a href="#" id="btn-show-help">Help</a>
-
-<form id="search-form">
-    <input type="text" id="keywordsearch" list="keyword-suggestions" placeholder="Find Keyword" required>
-    <datalist id="keyword-suggestions"></datalist>
-    <button type="submit">Search</button>
-  </form>
-
-<div id="menu-actions">
-    <a href="#" id="btn-back">← Back</a>
-    <a href="#" id="btn-zoom-reset">Reset View</a>
-  </div>
-
-<div id="auth-section">
-  <button id="btn-login" class="auth-button">Login</button>
-  <button id="btn-logout" class="auth-button auth-only">Logout</button>
-</div>
+  <div id="floating-actions">
+    <button id="btn-back" title="Go back">&larr;</button>
+    <button id="btn-zoom-reset" title="Reset view">&#x2316;</button>
+    <a href="#" id="btn-show-help" title="Help">?</a>
   </div>
 
   <button id="menu-toggle" title="Menu">
@@ -78,34 +80,31 @@
 
   <div id="statistics-modal" class="hidden">
     <div class="modal-content">
-      <button class="btn-close">x</button>
+      <button class="btn-close">&times;</button>
       <h3 class="modal-title">Statistics</h3>
       <div class="modal-meta">
-    <div class="meta-item">
-      <p><b>General</b></p>
-      <p>
-      <ul>
-      <li>All lessons: <span id="stat-node-count">0</span></li>
-      <li>All Keywords: <span id="stat-keyword-count">0</span></li>
-      </ul>
-    </p>
-    <p><b>Personal:</b></p>
-    <ul>
-      <li>Lessons completed: <span id="stat-finished-count">0</span></li>
-      <li>To-Do lessons: <span id="stat-todo-count">0</span></li>
-    </ul>
-
-    </div>
-
-       </div>
+        <div class="meta-item">
+          <b>General</b>
+          <ul>
+            <li>All lessons: <span id="stat-node-count">0</span></li>
+            <li>All Keywords: <span id="stat-keyword-count">0</span></li>
+          </ul>
+          <b>Personal:</b>
+          <ul>
+            <li>Lessons completed: <span id="stat-finished-count">0</span></li>
+            <li>To-Do lessons: <span id="stat-todo-count">0</span></li>
+          </ul>
+        </div>
       </div>
     </div>
+  </div>
 
 
 <div id="help-modal" class="hidden">
   <div class="modal-content">
     <button class="btn-close">×</button>
     <h3 class="modal-title">STEMgraph Quick Guide</h3>
+    <p>STEMgraph visualizes IT lessons and their dependencies as an interactive 3D graph. Explore connections between topics, track your progress, and find your learning path.</p>
     <div class="modal-meta">
       <p><b>Navigation:</b></p>
       <ul>

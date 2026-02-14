@@ -155,7 +155,7 @@ export function setupEventHandlers(callbacks) {
 
         setFinishedNodes(updatedFinished);
         localStorage.setItem('finishedNodes', JSON.stringify(updatedFinished));
-        Graph().nodeColor(Graph().nodeColor());
+        Graph().nodeThreeObject(Graph().nodeThreeObject());
     });
 
     /* node todo */
@@ -174,7 +174,7 @@ export function setupEventHandlers(callbacks) {
 
         setTodoNodes(updatedTodo);
         localStorage.setItem('todoNodes', JSON.stringify(updatedTodo));
-        Graph().nodeColor(Graph().nodeColor());
+        Graph().nodeThreeObject(Graph().nodeThreeObject());
     });
 
     /* subgraph */

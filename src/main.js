@@ -181,8 +181,8 @@ async function loadTodoGraph() {
 
     setTimeout(() => Graph.zoomToFit(GRAPH_CONFIG.zoomDuration, GRAPH_CONFIG.zoomPadding), DELAYS.zoomShort);
   } catch (error) {
-    console.error('Fehler beim Laden des To-Do Graphs:', error);
-    alert('Fehler beim Laden des To-Do Graphs');
+    console.error('Error loading To-Do graph:', error);
+    alert('Error loading To-Do graph');
   }
 }
 
@@ -217,7 +217,7 @@ function loadGraph(url, addToHistory = true) {
       if (addToHistory) pushHistory(url);
     })
     .catch(error => {
-      console.error("Fehler beim Laden:", error);
+      console.error("Error loading graph:", error);
     });
 }
 
@@ -272,7 +272,7 @@ loadStartEndNodes().then(() => {
     .catch(error => {
       console.error("Initial graph load failed:", error);
       document.getElementById("graph-container").innerHTML =
-        '<p style="color:#fff;text-align:center;margin-top:40vh;">Nodes konnten nicht geladen werden.</p>';
+        '<p style="color:#fff;text-align:center;margin-top:40vh;">Failed to load nodes.</p>';
     });
 });
 
