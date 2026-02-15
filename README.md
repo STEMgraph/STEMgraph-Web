@@ -33,9 +33,8 @@ Have fun discovering the STEMgraph, a Cloud of all Keywords or search for a cert
 
 ## To-Do
 - persistent saving of marked nodes (so far just localstorage)
-- more individual possibilities
-- learning paths
-- admin and user dashboard
+- improved statistics including popular nodes, node visits
+- individual Dashboard for each role (teacher / student / admin)
 
 ## Setup
 
