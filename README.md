@@ -36,3 +36,47 @@ Have fun discovering the STEMgraph, a Cloud of all Keywords or search for a cert
 - more individual possibilities
 - learning paths
 - admin and user dashboard
+
+## Setup
+
+- clone this repo
+- configure your API endpoints in `src/config.js`:
+
+```javascript
+export const API_BASE = 'https://your-api-url';
+export const KEYCLOAK_BASE = 'https://your-keycloak-url/';
+```
+
+### Local Development
+
+Start a local server:
+
+```bash
+python3 -m http.server 8999
+```
+
+Open `http://localhost:8999\` in your browser.
+
+**Note:** For local development, please consider CORS configuration
+
+### Docker Deployment
+
+use docker-compose:
+
+\`\`\`bash
+docker-compose up -d
+\`\`\`
+
+### Production Deployment
+
+Copy files to your web server directory (e.g., Nginx, Apache):
+
+\`\`\`bash
+sudo cp -r * /var/www/html/stemgraph
+\`\`\`
+
+Configure your web server to serve the directory and restart. Update \`API_BASE\` in \`src/config.js\` to your production API endpoint.
+
+
+
+
