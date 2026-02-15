@@ -63,17 +63,13 @@ Open `http://localhost:8999\` in your browser.
 
 use docker-compose:
 
-\`\`\`bash
+```bash
 docker-compose up -d
-\`\`\`
+```
 
 ### Production Deployment
 
 Copy files to your web server directory (e.g., Nginx, Apache):
-
-\`\`\`bash
-sudo cp -r * /var/www/html/stemgraph
-\`\`\`
 
 Configure your web server to serve the directory and restart. Update \`API_BASE\` in \`src/config.js\` to your production API endpoint.
 
