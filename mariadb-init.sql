@@ -19,10 +19,11 @@ CREATE TABLE IF NOT EXISTS learning_paths (
     PRIMARY KEY (id)
 );
 
--- Node assignments to learning paths (m:n)
+-- Node assignments to learning paths (m:n), ordered by position
 CREATE TABLE IF NOT EXISTS learning_path_nodes (
-    path_id VARCHAR(36)  NOT NULL,
-    node_id VARCHAR(255) NOT NULL,
+    path_id  VARCHAR(36)  NOT NULL,
+    node_id  VARCHAR(255) NOT NULL,
+    position INT          NOT NULL DEFAULT 0,
     PRIMARY KEY (path_id, node_id),
     FOREIGN KEY (path_id) REFERENCES learning_paths(id) ON DELETE CASCADE
 );
