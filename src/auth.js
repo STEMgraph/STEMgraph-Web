@@ -2,11 +2,9 @@ import { KEYCLOAK_CONFIG, KEYCLOAK_INIT_OPTIONS } from './config.js';
 
 export const keycloak = new Keycloak(KEYCLOAK_CONFIG);
 
-export function initAuth() {
+export function initAuth(onAuthenticated) {
     keycloak.init(KEYCLOAK_INIT_OPTIONS).then(authenticated => {
         const loginBtn = document.getElementById('btn-login');
-        const logoutBtn = document.getElementById('btn-logout');
-        const userGreeting = document.getElementById('user-greeting');
         const usernameSpan = document.getElementById('username');
 
         if (authenticated) {
@@ -31,6 +29,15 @@ export function initAuth() {
             document.querySelectorAll('.auth-only').forEach(el => {
                 el.style.display = 'block';
             });
+
+            /* automatically refresh token before it expires */
+            keycloak.onTokenExpired = () => {
+                keycloak.updateToken(5).catch(() => {
+                    console.warn('Token refresh failed — session expired');
+                });
+            };
+
+            if (onAuthenticated) onAuthenticated();
         }
     });
 }

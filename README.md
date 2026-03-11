@@ -5,73 +5,51 @@
 ## Features
 
 - **3D Force Graph** - Interactive 3D visualization of all learning resources
-- **ToDo Graph** - A Subgraph including all your marked To-Do Nodes
+- **ToDo Graph** - A subgraph including all your marked To-Do nodes
 - **Keyword Search** - Find exercises by keywords
 - **Keyword Graph** - Visualize all available keywords as a graph
 - **Node Details** - Click on nodes for details (topic, keywords, dependencies)
 - **Subgraph Exploration** - Load relevant subgraphs for individual exercises
-- **Statistics** - including all nodes/keywords and individually marked nodes
-- **Identity** - so far just login via Keycloak
+- **Progress Tracking** - Mark lessons as completed or add them to your To-Do list (persisted per user)
+- **Statistics** - Including all nodes/keywords and individually marked nodes
+- **Authentication** - Login via Keycloak with role-based access (student / teacher / admin)
 
 ## Technology
 
 - **Frontend**: Vanilla JS
 - **Visualization**: [3d-force-graph](https://github.com/vasturiano/3d-force-graph)
 - **API**: FastAPI (STEMgraph-API)
-- **Keycloak**: Keycloak Server
+- **Database**: MariaDB
+- **Auth**: Keycloak
 
-## Usage 
-Have fun discovering the STEMgraph, a Cloud of all Keywords or search for a certain Keyword.
-- Query Parameter to directly access nodes with their dependencies: index.html?node=uuid
-- Query Parameter to directly access nodes with a certain keyword: index.html?keyword=keyword
+## Usage
 
-## Keyboard-Bindings
-- LEFTARROW to go one step back
-- SPACE to reset the view automatically
-- ESC to exit the node-details
-- F1 to open the help modal
+Have fun discovering the STEMgraph, a cloud of all keywords or search for a certain keyword.
+
+- `?node=<uuid>` — directly load a node with its dependencies
+- `?keyword=<keyword>` — directly load nodes by keyword
+
+## Keyboard Shortcuts
+
+| Key | Action |
+|---|---|
+| `←` | Go back one step |
+| `Space` | Reset view |
+| `Esc` | Close node details |
+| `F1` | Open help |
 
 ## To-Do
-- persistent saving of marked nodes (so far just localstorage)
-- improved statistics including popular nodes, node visits
-- individual Dashboard for each role (teacher / student / admin)
+
+- Teacher interface for learning path management
+- Role-based dashboards (student / teacher / admin)
+- Improved statistics (popular nodes, node visits)
 
 ## Setup
 
-- clone this repo
-- configure your API endpoints in `src/config.js`:
+Configure API and Keycloak endpoints in `src/config.js`.
 
-```javascript
-export const API_BASE = 'https://your-api-url';
-export const KEYCLOAK_BASE = 'https://your-keycloak-url/';
-```
-
-### Local Development
-
-Start a local server:
-
-```bash
-python3 -m http.server 8999
-```
-
-Open `http://localhost:8999\` in your browser.
-
-**Note:** For local development, please consider CORS configuration
-
-### Docker Deployment
-
-use docker-compose:
+Copy `.env.example` to `.env` and set your credentials.
 
 ```bash
 docker-compose up -d
 ```
-
-### Production Deployment
-
-Copy files to your web server directory (e.g., Nginx, Apache):
-
-Configure your web server to serve the directory and restart. Update \`API_BASE\` in \`src/config.js\` to your production API endpoint.
-
-
-
-

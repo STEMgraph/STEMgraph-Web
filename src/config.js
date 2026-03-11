@@ -8,7 +8,8 @@ export const KEYCLOAK_CONFIG = {
 };
 
 export const KEYCLOAK_INIT_OPTIONS = {
-    onLoad: 'check-sso'
+    onLoad: 'check-sso',
+    checkLoginIframe: false
 };
 
 

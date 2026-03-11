@@ -9,12 +9,31 @@ import {
 import { keycloak, initAuth } from './auth.js';
 import { setupEventHandlers, openModal, openStatisticsModal, openHelpModal, closeModal, getCurrentNode, btnBack } from './events.js';
 
-initAuth();
-
 let Graph;
 let graphHistory = [];
-let finishedNodes = JSON.parse(localStorage.getItem('finishedNodes') || '[]');
-let todoNodes = JSON.parse(localStorage.getItem('todoNodes') || '[]');
+let finishedNodes = [];
+let todoNodes = [];
+
+async function loadUserNodes() {
+  if (!keycloak.authenticated) return;
+  const userId = keycloak.tokenParsed?.sub;
+  const headers = { Authorization: `Bearer ${keycloak.token}` };
+  try {
+    const [finRes, todoRes] = await Promise.all([
+      fetch(`${API_BASE}/users/${userId}/finished`, { headers }),
+      fetch(`${API_BASE}/users/${userId}/todo`, { headers })
+    ]);
+    finishedNodes = (await finRes.json()).map(row => row.node_id);
+    todoNodes = (await todoRes.json()).map(row => row.node_id);
+  } catch (e) {
+    console.error("Error loading user nodes:", e);
+  }
+}
+
+initAuth(async () => {
+  await loadUserNodes();
+  if (Graph) Graph.nodeThreeObject(Graph.nodeThreeObject());
+});
 let startNodeIds = new Set();
 let endNodeIds = new Set();
 

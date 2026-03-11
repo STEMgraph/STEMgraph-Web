@@ -144,17 +144,21 @@ export function setupEventHandlers(callbacks) {
         const node = getCurrentNode();
         if (!node) return;
 
+        const userId = keycloak.tokenParsed?.sub;
+        const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${keycloak.token}` };
+
         let updatedFinished;
         if (finishedNodes().includes(node.id)) {
             updatedFinished = finishedNodes().filter(id => id !== node.id);
             btnMarkFinished.textContent = "Mark lesson as completed";
+            fetch(`${API_BASE}/users/${userId}/finished/${node.id}`, { method: 'DELETE', headers });
         } else {
             updatedFinished = [...finishedNodes(), node.id];
             btnMarkFinished.textContent = "Mark lesson as not completed";
+            fetch(`${API_BASE}/users/${userId}/finished`, { method: 'POST', headers, body: JSON.stringify({ node_id: node.id }) });
         }
 
         setFinishedNodes(updatedFinished);
-        localStorage.setItem('finishedNodes', JSON.stringify(updatedFinished));
         Graph().nodeThreeObject(Graph().nodeThreeObject());
     });
 
@@ -163,17 +167,21 @@ export function setupEventHandlers(callbacks) {
         const node = getCurrentNode();
         if (!node) return;
 
+        const userId = keycloak.tokenParsed?.sub;
+        const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${keycloak.token}` };
+
         let updatedTodo;
         if (todoNodes().includes(node.id)) {
             updatedTodo = todoNodes().filter(id => id !== node.id);
             btnMarkTodo.textContent = "Put lesson on your To-Do list";
+            fetch(`${API_BASE}/users/${userId}/todo/${node.id}`, { method: 'DELETE', headers });
         } else {
             updatedTodo = [...todoNodes(), node.id];
             btnMarkTodo.textContent = "Remove lesson from to-do list";
+            fetch(`${API_BASE}/users/${userId}/todo`, { method: 'POST', headers, body: JSON.stringify({ node_id: node.id }) });
         }
 
         setTodoNodes(updatedTodo);
-        localStorage.setItem('todoNodes', JSON.stringify(updatedTodo));
         Graph().nodeThreeObject(Graph().nodeThreeObject());
     });
 
