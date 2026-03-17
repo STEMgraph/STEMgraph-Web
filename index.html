@@ -24,6 +24,7 @@
       <a href="#" id="btn-show-keywordcloud">Keyword Cloud</a>
       <a href="#" id="btn-show-todo" class="auth-only">To-Do Graph</a>
       <a href="#" id="btn-show-statistics" class="auth-only">Statistics</a>
+      <a href="#" id="btn-show-learning-paths">Learning Paths</a>
     </div>
 
     <form id="search-form">
@@ -74,6 +75,15 @@
         <button id="btn-github">Open lesson</button>
         <button id="btn-mark-finished" class="auth-only">Mark lesson as completed</button>
         <button id="btn-mark-todo" class="auth-only">Put lesson on your To-Do list</button>
+        <div class="teacher-only" id="add-to-path-section">
+          <select id="path-select">
+            <option value="">Select a path...</option>
+          </select>
+          <label class="add-deps-label">
+            <input type="checkbox" id="add-dependencies-checkbox"> Add deps
+          </label>
+          <button id="btn-add-to-path">Add to Path</button>
+        </div>
       </div>
     </div>
   </div>
@@ -99,6 +109,55 @@
     </div>
   </div>
 
+
+<div id="learning-paths-modal" class="hidden">
+  <div class="modal-content">
+    <button class="btn-close">×</button>
+    <h3 class="modal-title" id="learning-paths-modal-title">Learning Paths</h3>
+    <div class="modal-meta">
+      <!-- UUID Lookup (visible for all) -->
+      <div id="path-lookup-section">
+        <div id="path-lookup-form">
+          <input type="text" id="path-lookup-uuid" placeholder="Paste path UUID...">
+          <button id="btn-path-lookup">Load</button>
+        </div>
+        <div id="path-lookup-result" class="hidden">
+          <!-- dynamically populated -->
+        </div>
+      </div>
+
+      <!-- List View (teacher/admin only) -->
+      <div id="learning-paths-list-view" class="teacher-only">
+        <h4 class="path-section-title">My Learning Paths</h4>
+        <div id="learning-paths-list">
+          <!-- dynamically populated -->
+        </div>
+        <div id="create-path-form">
+          <input type="text" id="new-path-name" placeholder="New path name...">
+          <button id="btn-create-path">Create Path</button>
+        </div>
+      </div>
+
+      <!-- Edit View (hidden by default) -->
+      <div id="learning-path-edit-view" class="hidden">
+        <button id="btn-path-edit-back">&larr; Back</button>
+        <div id="path-edit-header">
+          <input type="text" id="path-edit-name">
+          <button id="btn-path-rename">Rename</button>
+        </div>
+        <div id="path-edit-uuid">
+          <span class="meta-label">UUID:</span>
+          <code id="path-edit-id"></code>
+          <button id="btn-copy-path-id" title="Copy UUID">Copy UUID</button>
+          <button id="btn-copy-path-url" title="Copy shareable URL">Copy URL</button>
+        </div>
+        <div id="path-edit-nodes">
+          <!-- dynamically populated -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div id="help-modal" class="hidden">
   <div class="modal-content">

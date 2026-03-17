@@ -46,6 +46,10 @@ h1 {
   display: none;
 }
 
+.teacher-only:not(.teacher-shown) {
+  display: none;
+}
+
 /* User Greeting */
 #user-greeting {
   text-align: center;
@@ -308,7 +312,8 @@ h1 {
 /* Modals */
 #node-modal,
 #statistics-modal,
-#help-modal {
+#help-modal,
+#learning-paths-modal {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.7);
@@ -318,10 +323,363 @@ h1 {
   z-index: 1000;
 }
 
-#node-modal.hidden,
-#statistics-modal.hidden,
-#help-modal.hidden {
-  display: none;
+.hidden {
+  display: none !important;
+}
+
+/* Learning Paths Modal */
+.path-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.path-list-item:last-child {
+  border-bottom: none;
+}
+
+.path-name {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+}
+
+.path-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.path-actions button {
+  padding: 6px 12px;
+  background: rgba(60, 60, 60, 0.8);
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.path-actions button:hover {
+  background: rgba(80, 80, 80, 0.9);
+}
+
+#create-path-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#new-path-name {
+  flex: 1;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 13px;
+}
+
+#new-path-name::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+#btn-create-path {
+  padding: 8px 16px;
+  background: rgba(60, 60, 60, 0.8);
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+#btn-create-path:hover {
+  background: rgba(80, 80, 80, 0.9);
+}
+
+.path-section-title {
+  color: #fff;
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 16px;
+}
+
+/* Path Lookup */
+#path-lookup-section {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#path-lookup-form {
+  display: flex;
+  gap: 8px;
+}
+
+#path-lookup-uuid {
+  flex: 1;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 13px;
+}
+
+#path-lookup-uuid::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+#btn-path-lookup {
+  padding: 8px 16px;
+  background: rgba(60, 60, 60, 0.8);
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+#btn-path-lookup:hover {
+  background: rgba(80, 80, 80, 0.9);
+}
+
+#path-lookup-result {
+  margin-top: 12px;
+}
+
+
+.path-lookup-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+}
+
+.path-lookup-name {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.path-lookup-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.path-lookup-actions button {
+  padding: 6px 12px;
+  background: rgba(60, 60, 60, 0.8);
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.path-lookup-actions button:hover {
+  background: rgba(80, 80, 80, 0.9);
+}
+
+/* Path Edit View */
+
+#btn-path-edit-back {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 16px;
+}
+
+#btn-path-edit-back:hover {
+  color: #fff;
+}
+
+#path-edit-header {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#path-edit-name {
+  flex: 1;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+#btn-path-rename {
+  padding: 8px 14px;
+  background: rgba(60, 60, 60, 0.8);
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+#btn-path-rename:hover {
+  background: rgba(80, 80, 80, 0.9);
+}
+
+#path-edit-uuid {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  margin-bottom: 16px;
+  font-size: 12px;
+}
+
+#path-edit-id {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  word-break: break-all;
+}
+
+#path-edit-nodes {
+  max-height: 300px;
+  overflow-y: auto;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#btn-copy-path-id,
+#btn-copy-path-url {
+  padding: 3px 8px;
+  background: rgba(60, 60, 60, 0.8);
+  border: none;
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+#btn-copy-path-id:hover,
+#btn-copy-path-url:hover {
+  background: rgba(80, 80, 80, 0.9);
+}
+
+.path-node-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.path-node-item:last-child {
+  border-bottom: none;
+}
+
+.path-node-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.path-node-pos {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 20px;
+}
+
+.path-node-name {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.path-node-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.path-node-actions button {
+  padding: 4px 8px;
+  background: rgba(60, 60, 60, 0.8);
+  border: none;
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.path-node-actions button:hover {
+  background: rgba(80, 80, 80, 0.9);
+  color: #fff;
+}
+
+/* Add to Path section (node modal) */
+#add-to-path-section {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(60, 60, 60, 0.8);
+  border-radius: 8px;
+}
+
+#path-select {
+  flex: 1;
+  padding: 5px 8px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  min-width: 0;
+}
+
+#path-select option {
+  background: #1e1e1e;
+}
+
+.add-deps-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+#btn-add-to-path {
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+#btn-add-to-path:hover {
+  background: rgba(255, 255, 255, 0.22);
 }
 
 .modal-content {

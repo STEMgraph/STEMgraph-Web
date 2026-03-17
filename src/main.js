@@ -9,6 +9,11 @@ import {
 import { keycloak, initAuth } from './auth.js';
 import { setupEventHandlers, openModal, openStatisticsModal, openHelpModal, closeModal, getCurrentNode, btnBack } from './events.js';
 
+initAuth(async () => {
+  await loadUserNodes();
+  if (Graph) Graph.nodeThreeObject(Graph.nodeThreeObject());
+});
+
 let Graph;
 let graphHistory = [];
 let finishedNodes = [];
@@ -29,11 +34,6 @@ async function loadUserNodes() {
     console.error("Error loading user nodes:", e);
   }
 }
-
-initAuth(async () => {
-  await loadUserNodes();
-  if (Graph) Graph.nodeThreeObject(Graph.nodeThreeObject());
-});
 let startNodeIds = new Set();
 let endNodeIds = new Set();
 
@@ -193,6 +193,7 @@ async function loadTodoGraph() {
       links: allLinks
     };
 
+    Graph.nodeThreeObject(createNodeThreeObject);
     Graph.nodeAutoColorBy(null);
     Graph.nodeColor(getNodeColor);
     Graph.nodeVal(() => 1);
@@ -202,6 +203,43 @@ async function loadTodoGraph() {
   } catch (error) {
     console.error('Error loading To-Do graph:', error);
     alert('Error loading To-Do graph');
+  }
+}
+
+/* loadPathGraph */
+async function loadPathGraph(pathId) {
+  try {
+    const pathRes = await fetch(`${API_BASE}/paths/${pathId}`);
+    const path = await pathRes.json();
+    const nodeIds = path.nodes || [];
+
+    if (nodeIds.length === 0) {
+      alert('This learning path has no nodes yet.');
+      return;
+    }
+
+    const nodeResults = await Promise.all(
+      nodeIds.map(nodeId => fetch(`${API_BASE}/getExercise/${nodeId}`).then(r => r.json()))
+    );
+
+    const nodes = nodeResults
+      .filter(data => data.nodes && data.nodes.length > 0)
+      .map(data => data.nodes[0]);
+
+    const links = [];
+    for (let i = 0; i < nodes.length - 1; i++) {
+      links.push({ source: nodes[i].id, target: nodes[i + 1].id });
+    }
+
+    Graph.nodeThreeObject(null);
+    Graph.nodeAutoColorBy(null);
+    Graph.nodeColor(() => "grey");
+    Graph.nodeVal(() => 1);
+    Graph.graphData({ nodes, links });
+    setTimeout(() => Graph.zoomToFit(GRAPH_CONFIG.zoomDuration, GRAPH_CONFIG.zoomPadding), DELAYS.zoomShort);
+  } catch (error) {
+    console.error('Error loading path graph:', error);
+    alert('Error loading path graph');
   }
 }
 
@@ -224,6 +262,7 @@ function loadGraph(url, addToHistory = true) {
       
       data = sanitizeGraphData(data);
       
+      Graph.nodeThreeObject(createNodeThreeObject);
       Graph.nodeAutoColorBy(null);
       Graph.nodeColor(getNodeColor);
       Graph.nodeVal(() => 1);
@@ -283,6 +322,7 @@ loadStartEndNodes().then(() => {
         goBack,
         loadGraph,
         loadTodoGraph,
+        loadPathGraph,
         getRandomColor,
         createNodeThreeObject,
         pushHistory
@@ -320,6 +360,12 @@ fetch(`${API_BASE}/getKeywordList`)
   if (params.has('node')) {
     const id = params.get('node').trim();
     if (id) loadGraph(`${API_BASE}/getPathToExercise/${encodeURIComponent(id)}`);
+    return;
+  }
+
+  if (params.has('path')) {
+    const pathId = params.get('path').trim();
+    if (pathId) loadPathGraph(pathId);
     return;
   }
 })();

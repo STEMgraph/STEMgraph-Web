@@ -5,6 +5,8 @@ export const keycloak = new Keycloak(KEYCLOAK_CONFIG);
 export function initAuth(onAuthenticated) {
     keycloak.init(KEYCLOAK_INIT_OPTIONS).then(authenticated => {
         const loginBtn = document.getElementById('btn-login');
+        const logoutBtn = document.getElementById('btn-logout');
+        const userGreeting = document.getElementById('user-greeting');
         const usernameSpan = document.getElementById('username');
 
         if (authenticated) {
@@ -29,6 +31,13 @@ export function initAuth(onAuthenticated) {
             document.querySelectorAll('.auth-only').forEach(el => {
                 el.style.display = 'block';
             });
+
+            /* show teacher-only items for teacher and admin */
+            if (roles.includes('teacher') || roles.includes('admin')) {
+                document.querySelectorAll('.teacher-only').forEach(el => {
+                    el.classList.add('teacher-shown');
+                });
+            }
 
             /* automatically refresh token before it expires */
             keycloak.onTokenExpired = () => {

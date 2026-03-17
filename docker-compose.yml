@@ -8,13 +8,28 @@ services:
     networks:
       frontproxy_fnet:
         ipv4_address: 172.18.18.31
-      backend:
+      stemgraph-network:
+
+  stemgraph-db:
+    image: mariadb:11
+    container_name: stemgraph-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./mariadb-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    networks:
+      stemgraph-network:
 
 networks:
   frontproxy_fnet:
     external: true
-  backend:
-    name: stemgraph-web_backend
-    driver: bridge
-    driver_opts:
-      com.docker.network.enable_ipv6: "false"
+  stemgraph-network:
+    external: true
+
+volumes:
+  db-data:
