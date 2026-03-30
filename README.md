@@ -4,31 +4,46 @@
 
 ## Features
 
-- **3D Force Graph** - Interactive 3D visualization of all learning resources
-- **ToDo Graph** - A subgraph including all your marked To-Do nodes
-- **Keyword Search** - Find exercises by keywords
-- **Keyword Graph** - Visualize all available keywords as a graph
-- **Node Details** - Click on nodes for details (topic, keywords, dependencies)
-- **Subgraph Exploration** - Load relevant subgraphs for individual exercises
-- **Progress Tracking** - Mark lessons as completed or add them to your To-Do list (persisted per user)
-- **Learning Paths** - Learning Paths can be created, Teaches can add nodes to their paths, rearange them and share them via uuid or url, students can open learning paths, explore them and add them to their to-do list
-- **Statistics** - Including all nodes/keywords and individually marked nodes
-- **Authentication** - Login via Keycloak with role-based access (student / teacher / admin)
+- Interactive 3D force graph visualization of all learning resources
+- Node details with topic, keywords, and dependencies
+- Subgraph exploration for individual exercises
+- Keyword search and keyword graph
+- Load learning paths via UUID or URL
+
+### Identity-based Features (Keycloak)
+
+**Student**
+- Mark lessons as completed or add them to a personal to-do list (persisted server-side)
+- To-do graph: a subgraph of all marked to-do nodes
+- My Progress: personal statistics with progress bar
+
+**Teacher**
+- All student features
+- Create, edit, reorder, and delete learning paths
+- Share learning paths via UUID or URL
+- Analytics dashboard with Chart.js (active users, top lessons, event distribution)
+
+**Admin**
+- All teacher features
+- Visibility of all learning paths (not just own)
+
 
 ## Technology
 
 - **Frontend**: Vanilla JS
 - **Visualization**: [3d-force-graph](https://github.com/vasturiano/3d-force-graph)
+- **Charts**: [Chart.js](https://www.chartjs.org/)
 - **API**: FastAPI (STEMgraph-API)
 - **Database**: MariaDB
 - **Auth**: Keycloak
 
-## Usage
 
-Have fun discovering the STEMgraph, a cloud of all keywords or search for a certain keyword.
+## Usage
 
 - `?node=<uuid>` — directly load a node with its dependencies
 - `?keyword=<keyword>` — directly load nodes by keyword
+- `?path=<uuid>` — directly load a learning path
+
 
 ## Keyboard Shortcuts
 
@@ -40,16 +55,27 @@ Have fun discovering the STEMgraph, a cloud of all keywords or search for a cert
 | `F1` | Open help |
 
 ## To-Do
-- features for admin role
-- student statistics / something like a dashboard in the current ui
-- Improved statistics (popular nodes, node visits)
+- example learning paths
+- UI tweaks
+
 
 ## Setup
 
-Configure API and Keycloak endpoints in `src/config.js`.
+### Prerequisites
+- Docker & Docker Compose
+- A running Keycloak instance with a `stemgraph` realm and roles (`student`, `teacher`, `admin`)
+- A running STEMgraph-API backend
+- A MariaDB instance (can be started via the included `docker-compose.yml`)
 
-Copy `.env.example` to `.env` and set your credentials.
+### Configuration
+
+1. Copy `.env.example` to `.env` and set your MariaDB credentials
+2. Configure API and Keycloak endpoints in `src/config.js`
+3. Adjust `nginx.conf` to match your backend container names
+
+### Run
 
 ```bash
-docker-compose up -d
-```
+docker compose up -d --build
+
+
