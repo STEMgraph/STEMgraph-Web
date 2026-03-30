@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>STEMgraph 3D Web</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
   <script src="https://unpkg.com/3d-force-graph"></script>
   <script src="https://cdn.jsdelivr.net/npm/keycloak-js@latest/dist/keycloak.min.js"></script>
@@ -23,7 +24,8 @@
       <a href="#" id="btn-whole-graph">Whole Graph</a>
       <a href="#" id="btn-show-keywordcloud">Keyword Cloud</a>
       <a href="#" id="btn-show-todo" class="auth-only">To-Do Graph</a>
-      <a href="#" id="btn-show-statistics" class="auth-only">Statistics</a>
+      <a href="#" id="btn-show-statistics" class="auth-only">My Progress</a>
+      <a href="#" id="btn-show-analytics" class="teacher-only">Analytics</a>
       <a href="#" id="btn-show-learning-paths">Learning Paths</a>
     </div>
 
@@ -91,19 +93,27 @@
   <div id="statistics-modal" class="hidden">
     <div class="modal-content">
       <button class="btn-close">&times;</button>
-      <h3 class="modal-title">Statistics</h3>
+      <h3 class="modal-title">My Progress</h3>
       <div class="modal-meta">
-        <div class="meta-item">
-          <b>General</b>
-          <ul>
-            <li>All lessons: <span id="stat-node-count">0</span></li>
-            <li>All Keywords: <span id="stat-keyword-count">0</span></li>
-          </ul>
-          <b>Personal:</b>
-          <ul>
-            <li>Lessons completed: <span id="stat-finished-count">0</span></li>
-            <li>To-Do lessons: <span id="stat-todo-count">0</span></li>
-          </ul>
+        <div class="progress-stats">
+          <div class="progress-stat-card">
+            <span class="progress-stat-value" id="stat-finished-count">0</span>
+            <span class="progress-stat-label">Completed</span>
+          </div>
+          <div class="progress-stat-card">
+            <span class="progress-stat-value" id="stat-todo-count">0</span>
+            <span class="progress-stat-label">To-Do</span>
+          </div>
+          <div class="progress-stat-card">
+            <span class="progress-stat-value" id="stat-total-count">0</span>
+            <span class="progress-stat-label">Total Lessons</span>
+          </div>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="progress-bar-fill"></div>
+          </div>
+          <span class="progress-bar-label" id="progress-bar-label">0% completed</span>
         </div>
       </div>
     </div>
@@ -153,6 +163,80 @@
         </div>
         <div id="path-edit-nodes">
           <!-- dynamically populated -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="analytics-modal" class="hidden">
+  <div class="modal-content analytics-modal-content">
+    <button class="btn-close">×</button>
+    <h3 class="modal-title">Analytics</h3>
+    <div class="modal-meta">
+      <!-- Platform Overview -->
+      <div class="analytics-section">
+        <h4 class="analytics-section-title">Platform Overview</h4>
+        <div class="analytics-user-stats">
+          <div class="analytics-stat-card">
+            <span class="analytics-stat-value" id="analytics-node-count">–</span>
+            <span class="analytics-stat-label">Lessons</span>
+          </div>
+          <div class="analytics-stat-card">
+            <span class="analytics-stat-value" id="analytics-keyword-count">–</span>
+            <span class="analytics-stat-label">Keywords</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Users -->
+      <div class="analytics-section">
+        <h4 class="analytics-section-title">Active Users</h4>
+        <div class="analytics-user-stats">
+          <div class="analytics-stat-card">
+            <span class="analytics-stat-value" id="analytics-users-total">–</span>
+            <span class="analytics-stat-label">Total</span>
+          </div>
+          <div class="analytics-stat-card">
+            <span class="analytics-stat-value" id="analytics-users-30d">–</span>
+            <span class="analytics-stat-label">Last 30 days</span>
+          </div>
+          <div class="analytics-stat-card">
+            <span class="analytics-stat-value" id="analytics-users-7d">–</span>
+            <span class="analytics-stat-label">Last 7 days</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Event Overview -->
+      <div class="analytics-section">
+        <h4 class="analytics-section-title">Events by Type</h4>
+        <div class="analytics-chart-container">
+          <canvas id="chart-events-overview"></canvas>
+        </div>
+      </div>
+
+      <!-- Top Lessons -->
+      <div class="analytics-section">
+        <h4 class="analytics-section-title">Top Lessons (opened)</h4>
+        <div class="analytics-chart-container">
+          <canvas id="chart-top-lessons"></canvas>
+        </div>
+      </div>
+
+      <!-- Top Finished -->
+      <div class="analytics-section">
+        <h4 class="analytics-section-title">Top Lessons (completed)</h4>
+        <div class="analytics-chart-container">
+          <canvas id="chart-top-finished"></canvas>
+        </div>
+      </div>
+
+      <!-- Top Paths -->
+      <div class="analytics-section">
+        <h4 class="analytics-section-title">Top Learning Paths (loaded)</h4>
+        <div class="analytics-chart-container">
+          <canvas id="chart-top-paths"></canvas>
         </div>
       </div>
     </div>

@@ -7,7 +7,7 @@ import {
     DELAYS
 } from './config.js';
 import { keycloak, initAuth } from './auth.js';
-import { setupEventHandlers, openModal, openStatisticsModal, openHelpModal, closeModal, getCurrentNode, btnBack } from './events.js';
+import { setupEventHandlers, openModal, openStatisticsModal, openHelpModal, openAnalyticsModal, closeModal, getCurrentNode, btnBack, trackEvent } from './events.js';
 
 initAuth(async () => {
   await loadUserNodes();
@@ -28,8 +28,14 @@ async function loadUserNodes() {
       fetch(`${API_BASE}/users/${userId}/finished`, { headers }),
       fetch(`${API_BASE}/users/${userId}/todo`, { headers })
     ]);
-    finishedNodes = (await finRes.json()).map(row => row.node_id);
-    todoNodes = (await todoRes.json()).map(row => row.node_id);
+    if (finRes.ok) {
+      const finData = await finRes.json();
+      if (Array.isArray(finData)) finishedNodes = finData.map(row => row.node_id);
+    }
+    if (todoRes.ok) {
+      const todoData = await todoRes.json();
+      if (Array.isArray(todoData)) todoNodes = todoData.map(row => row.node_id);
+    }
   } catch (e) {
     console.error("Error loading user nodes:", e);
   }
@@ -236,6 +242,7 @@ async function loadPathGraph(pathId) {
     Graph.nodeColor(() => "grey");
     Graph.nodeVal(() => 1);
     Graph.graphData({ nodes, links });
+    trackEvent('path_load', null, pathId);
     setTimeout(() => Graph.zoomToFit(GRAPH_CONFIG.zoomDuration, GRAPH_CONFIG.zoomPadding), DELAYS.zoomShort);
   } catch (error) {
     console.error('Error loading path graph:', error);
@@ -312,6 +319,19 @@ loadStartEndNodes().then(() => {
       pushHistory(initialUrl);
       setTimeout(() => Graph.zoomToFit(GRAPH_CONFIG.zoomDuration, GRAPH_CONFIG.zoomPadding), DELAYS.zoomLong);
 
+      /* handle URL query params after graph is ready */
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('keyword')) {
+        const kw = params.get('keyword').trim();
+        if (kw) loadGraph(`${API_BASE}/getExercisesByKeyword/${encodeURIComponent(kw)}`);
+      } else if (params.has('node')) {
+        const id = params.get('node').trim();
+        if (id) loadGraph(`${API_BASE}/getPathToExercise/${encodeURIComponent(id)}`);
+      } else if (params.has('path')) {
+        const pathId = params.get('path').trim();
+        if (pathId) loadPathGraph(pathId);
+      }
+
       /* setup event handlers after graph is initialized */
       setupEventHandlers({
         Graph: () => Graph,
@@ -347,25 +367,3 @@ fetch(`${API_BASE}/getKeywordList`)
     });
   });
 
-/* query params */
-(function() {
-  const params = new URLSearchParams(window.location.search);
-
-  if (params.has('keyword')) {
-    const kw = params.get('keyword').trim();
-    if (kw) loadGraph(`${API_BASE}/getExercisesByKeyword/${encodeURIComponent(kw)}`);
-    return;
-  }
-
-  if (params.has('node')) {
-    const id = params.get('node').trim();
-    if (id) loadGraph(`${API_BASE}/getPathToExercise/${encodeURIComponent(id)}`);
-    return;
-  }
-
-  if (params.has('path')) {
-    const pathId = params.get('path').trim();
-    if (pathId) loadPathGraph(pathId);
-    return;
-  }
-})();

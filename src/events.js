@@ -1,6 +1,16 @@
 import { API_BASE, GRAPH_CONFIG, DELAYS, KEYBINDINGS } from './config.js';
 import { keycloak } from './auth.js';
 
+/* fire-and-forget event tracking */
+export function trackEvent(event_type, node_id = null, path_id = null) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (keycloak.token) headers.Authorization = `Bearer ${keycloak.token}`;
+  fetch(`${API_BASE}/events`, {
+    method: 'POST', headers,
+    body: JSON.stringify({ event_type, node_id, path_id })
+  }).catch(() => {});
+}
+
 /* dom-assignment */
 const modal = document.getElementById('node-modal');
 const statisticsModal = document.getElementById('statistics-modal');
@@ -92,8 +102,11 @@ export function openStatisticsModal(finishedNodes, todoNodes) {
   fetch(`${API_BASE}/getStatistics`)
     .then(r => r.json())
     .then(data => {
-      document.getElementById('stat-node-count').textContent = data.nodeCount || 0;
-      document.getElementById('stat-keyword-count').textContent = data.keywordCountDistinct || 0;
+      const total = data.nodeCount || 0;
+      document.getElementById('stat-total-count').textContent = total;
+      const pct = total > 0 ? Math.round((finishedNodes.length / total) * 100) : 0;
+      document.getElementById('progress-bar-fill').style.width = pct + '%';
+      document.getElementById('progress-bar-label').textContent = pct + '% completed';
     });
 
   statisticsModal.classList.remove('hidden');
@@ -123,11 +136,15 @@ export function openLearningPathsModal() {
     .then(r => r.json())
     .then(paths => {
       list.innerHTML = '';
-      if (paths.length === 0) {
+      const userId = keycloak.tokenParsed?.sub;
+      const roles = keycloak.realmAccess?.roles || [];
+      const isAdmin = roles.includes('admin');
+      const myPaths = isAdmin ? paths : paths.filter(p => p.creator_id === userId);
+      if (myPaths.length === 0) {
         list.innerHTML = '<p style="color: rgba(255,255,255,0.5)">No learning paths yet.</p>';
         return;
       }
-      paths.forEach(path => {
+      myPaths.forEach(path => {
         const item = document.createElement('div');
         item.className = 'path-list-item';
         item.dataset.id = path.id;
@@ -212,8 +229,185 @@ async function reorderPathNodes(pathId) {
   });
 }
 
+/* analytics */
+const analyticsModal = document.getElementById('analytics-modal');
+let analyticsCharts = {};
+
+function destroyAnalyticsCharts() {
+  Object.values(analyticsCharts).forEach(c => c.destroy());
+  analyticsCharts = {};
+}
+
+function createBarChart(canvasId, labels, data, color) {
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  return new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: color || 'rgba(100, 180, 255, 0.6)',
+        borderColor: color ? color.replace('0.6', '1') : 'rgba(100, 180, 255, 1)',
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          ticks: { color: 'rgba(255,255,255,0.5)', stepSize: 1 },
+          grid: { color: 'rgba(255,255,255,0.06)' }
+        },
+        y: {
+          ticks: { color: 'rgba(255,255,255,0.7)', font: { size: 11 } },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+}
+
+function createDoughnutChart(canvasId, labels, data) {
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  const colors = [
+    'rgba(100, 180, 255, 0.7)',
+    'rgba(255, 180, 100, 0.7)',
+    'rgba(100, 255, 180, 0.7)',
+    'rgba(255, 100, 180, 0.7)',
+    'rgba(180, 100, 255, 0.7)'
+  ];
+  return new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: colors.slice(0, labels.length),
+        borderColor: 'rgba(30, 30, 30, 0.95)',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: { color: 'rgba(255,255,255,0.7)', font: { size: 12 }, padding: 12 }
+        }
+      }
+    }
+  });
+}
+
+function truncateLabel(label, max = 30) {
+  if (!label) return '(unknown)';
+  return label.length > max ? label.substring(0, max) + '…' : label;
+}
+
+export async function openAnalyticsModal() {
+  destroyAnalyticsCharts();
+  analyticsModal.classList.remove('hidden');
+
+  const headers = { Authorization: `Bearer ${keycloak.token}` };
+
+  try {
+    /* fetch all data in parallel */
+    const [statsRes, usersRes, overviewRes, topLessonsRes, topFinishedRes, topPathsRes] = await Promise.all([
+      fetch(`${API_BASE}/getStatistics`),
+      fetch(`${API_BASE}/events?type=users`, { headers }),
+      fetch(`${API_BASE}/events`, { headers }),
+      fetch(`${API_BASE}/events?type=link_open`, { headers }),
+      fetch(`${API_BASE}/events?type=finished`, { headers }),
+      fetch(`${API_BASE}/events?type=path_load`, { headers })
+    ]);
+
+    /* platform overview */
+    if (statsRes.ok) {
+      const stats = await statsRes.json();
+      document.getElementById('analytics-node-count').textContent = stats.nodeCount || 0;
+      document.getElementById('analytics-keyword-count').textContent = stats.keywordCountDistinct || 0;
+    }
+
+    /* active users */
+    if (usersRes.ok) {
+      const users = await usersRes.json();
+      document.getElementById('analytics-users-total').textContent = users.total_users || 0;
+      document.getElementById('analytics-users-30d').textContent = users.active_30d || 0;
+      document.getElementById('analytics-users-7d').textContent = users.active_7d || 0;
+    }
+
+    /* events overview (doughnut) */
+    if (overviewRes.ok) {
+      const overview = await overviewRes.json();
+      if (Array.isArray(overview) && overview.length > 0) {
+        analyticsCharts.overview = createDoughnutChart(
+          'chart-events-overview',
+          overview.map(e => e.event_type),
+          overview.map(e => e.count)
+        );
+      }
+    }
+
+    /* top lessons opened (bar) */
+    if (topLessonsRes.ok) {
+      const topLessons = await topLessonsRes.json();
+      if (Array.isArray(topLessons)) {
+        const top10Lessons = topLessons.slice(0, 10);
+        if (top10Lessons.length > 0) {
+          analyticsCharts.lessons = createBarChart(
+            'chart-top-lessons',
+            top10Lessons.map(e => truncateLabel(e.node_id)),
+            top10Lessons.map(e => e.count),
+            'rgba(100, 180, 255, 0.6)'
+          );
+        }
+      }
+    }
+
+    /* top finished (bar) */
+    if (topFinishedRes.ok) {
+      const topFinished = await topFinishedRes.json();
+      if (Array.isArray(topFinished)) {
+        const top10Finished = topFinished.slice(0, 10);
+        if (top10Finished.length > 0) {
+          analyticsCharts.finished = createBarChart(
+            'chart-top-finished',
+            top10Finished.map(e => truncateLabel(e.node_id)),
+            top10Finished.map(e => e.count),
+            'rgba(100, 255, 180, 0.6)'
+          );
+        }
+      }
+    }
+
+    /* top paths (bar) */
+    if (topPathsRes.ok) {
+      const topPaths = await topPathsRes.json();
+      if (Array.isArray(topPaths)) {
+        const top10Paths = topPaths.slice(0, 10);
+        if (top10Paths.length > 0) {
+          analyticsCharts.paths = createBarChart(
+            'chart-top-paths',
+            top10Paths.map(e => truncateLabel(e.path_id)),
+            top10Paths.map(e => e.count),
+            'rgba(255, 180, 100, 0.6)'
+          );
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Error loading analytics:', e);
+  }
+}
+
 export function closeModal() {
-  [modal, statisticsModal, helpModal, learningPathsModal].forEach(m => m.classList.add('hidden'));
+  [modal, statisticsModal, helpModal, learningPathsModal, analyticsModal].forEach(m => m.classList.add('hidden'));
+  destroyAnalyticsCharts();
   document.getElementById('learning-paths-list-view').classList.remove('hidden');
   document.getElementById('learning-path-edit-view').classList.add('hidden');
   currentNode = null;
@@ -276,6 +470,12 @@ export function setupEventHandlers(callbacks) {
         openHelpModal();
     });
 
+    /* analytics */
+    document.getElementById('btn-show-analytics').addEventListener('click', e => {
+        e.preventDefault();
+        openAnalyticsModal();
+    });
+
     /* mark node */
     btnMarkFinished.addEventListener('click', () => {
         const node = getCurrentNode();
@@ -293,6 +493,7 @@ export function setupEventHandlers(callbacks) {
             updatedFinished = [...finishedNodes(), node.id];
             btnMarkFinished.textContent = "Mark lesson as not completed";
             fetch(`${API_BASE}/users/${userId}/finished`, { method: 'POST', headers, body: JSON.stringify({ node_id: node.id }) });
+            trackEvent('finished', node.id);
         }
 
         setFinishedNodes(updatedFinished);
@@ -312,10 +513,12 @@ export function setupEventHandlers(callbacks) {
             updatedTodo = todoNodes().filter(id => id !== node.id);
             btnMarkTodo.textContent = "Put lesson on your To-Do list";
             fetch(`${API_BASE}/users/${userId}/todo/${node.id}`, { method: 'DELETE', headers });
+            trackEvent('todo_remove', node.id);
         } else {
             updatedTodo = [...todoNodes(), node.id];
             btnMarkTodo.textContent = "Remove lesson from to-do list";
             fetch(`${API_BASE}/users/${userId}/todo`, { method: 'POST', headers, body: JSON.stringify({ node_id: node.id }) });
+            trackEvent('todo_add', node.id);
         }
 
         setTodoNodes(updatedTodo);
@@ -339,6 +542,7 @@ export function setupEventHandlers(callbacks) {
         if (node && node.id) {
             const repoUrl = "https://github.com/STEMgraph/" + node.id;
             window.open(repoUrl, "_blank");
+            trackEvent('link_open', node.id);
             closeModal();
         }
     });

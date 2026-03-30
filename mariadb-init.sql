@@ -27,3 +27,15 @@ CREATE TABLE IF NOT EXISTS learning_path_nodes (
     PRIMARY KEY (path_id, node_id),
     FOREIGN KEY (path_id) REFERENCES learning_paths(id) ON DELETE CASCADE
 );
+
+-- Event tracking: logs user interactions for admin analytics
+CREATE TABLE IF NOT EXISTS frontend_events (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    user_id    VARCHAR(36)  NOT NULL,
+    event_type VARCHAR(50)  NOT NULL,
+    node_id    VARCHAR(255) DEFAULT NULL,
+    path_id    VARCHAR(36)  DEFAULT NULL,
+    created_at DATETIME     DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_event_type (event_type),
+    INDEX idx_created_at (created_at)
+);
