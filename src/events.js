@@ -442,6 +442,22 @@ export function getCurrentNode() {
   return currentNode;
 }
 
+async function copyText(text) {
+    if (navigator.clipboard) {
+        try { await navigator.clipboard.writeText(text); return true; } catch { /* fall through */ }
+    }
+    try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText = 'position:fixed;opacity:0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        return true;
+    } catch { return false; }
+}
+
 export function setupEventHandlers(callbacks) {
     const {
         Graph,
@@ -785,21 +801,21 @@ export function setupEventHandlers(callbacks) {
     });
 
     /* path edit view - copy UUID */
-    document.getElementById('btn-copy-path-id').addEventListener('click', () => {
+    document.getElementById('btn-copy-path-id').addEventListener('click', async () => {
         const uuid = document.getElementById('path-edit-id').textContent;
-        navigator.clipboard.writeText(uuid);
         const btn = document.getElementById('btn-copy-path-id');
-        btn.textContent = 'Copied!';
+        const ok = await copyText(uuid);
+        btn.textContent = ok ? 'Copied!' : 'Error';
         setTimeout(() => { btn.textContent = 'Copy UUID'; }, 1500);
     });
 
     /* path edit view - copy URL */
-    document.getElementById('btn-copy-path-url').addEventListener('click', () => {
+    document.getElementById('btn-copy-path-url').addEventListener('click', async () => {
         const uuid = document.getElementById('path-edit-id').textContent;
         const url = `${window.location.origin}${window.location.pathname}?path=${uuid}`;
-        navigator.clipboard.writeText(url);
         const btn = document.getElementById('btn-copy-path-url');
-        btn.textContent = 'Copied!';
+        const ok = await copyText(url);
+        btn.textContent = ok ? 'Copied!' : 'Error';
         setTimeout(() => { btn.textContent = 'Copy URL'; }, 1500);
     });
 
