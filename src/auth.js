@@ -39,6 +39,13 @@ export function initAuth(onAuthenticated) {
                 });
             }
 
+            /* show admin-only items exclusively for admin */
+            if (roles.includes('admin')) {
+                document.querySelectorAll('.admin-only').forEach(el => {
+                    el.classList.add('admin-shown');
+                });
+            }
+
             /* automatically refresh token before it expires */
             keycloak.onTokenExpired = () => {
                 keycloak.updateToken(5).catch(() => {

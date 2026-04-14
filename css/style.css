@@ -50,6 +50,18 @@ h1 {
   display: none;
 }
 
+.admin-only:not(.admin-shown) {
+  display: none;
+}
+
+.menu-nav a.admin-only.admin-shown {
+  color: rgba(255, 160, 60, 0.85);
+}
+
+.menu-nav a.admin-only.admin-shown:hover {
+  color: rgba(255, 180, 80, 1);
+}
+
 /* User Greeting */
 #user-greeting {
   text-align: center;
@@ -824,8 +836,8 @@ h1 {
 
 /* Analytics Modal */
 .analytics-modal-content {
-  max-width: 700px;
-  min-width: 500px;
+  max-width: 900px;
+  min-width: 600px;
   max-height: 80vh;
   overflow-y: auto;
 }
@@ -884,6 +896,49 @@ h1 {
   padding: 16px;
   height: 220px;
   position: relative;
+}
+
+.analytics-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.analytics-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+}
+
+.analytics-list-item--clickable {
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.analytics-list-item--clickable:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.analytics-list-name {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 12px;
+}
+
+.analytics-list-count {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* Mobile Responsive */

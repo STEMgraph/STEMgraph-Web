@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>STEMgraph 3D Web</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-  <script src="https://unpkg.com/3d-force-graph"></script>
+  <script src="https://unpkg.com/3d-force-graph@1.74.3/dist/3d-force-graph.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/keycloak-js@latest/dist/keycloak.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -24,9 +24,10 @@
       <a href="#" id="btn-whole-graph">Whole Graph</a>
       <a href="#" id="btn-show-keywordcloud">Keyword Cloud</a>
       <a href="#" id="btn-show-todo" class="auth-only">To-Do Graph</a>
+      <a href="#" id="btn-show-learning-paths">Learning Paths</a>
       <a href="#" id="btn-show-statistics" class="auth-only">My Progress</a>
       <a href="#" id="btn-show-analytics" class="teacher-only">Analytics</a>
-      <a href="#" id="btn-show-learning-paths">Learning Paths</a>
+      <a href="#" id="btn-refresh-graph" class="admin-only">Refresh Graph-Data</a>
     </div>
 
     <form id="search-form">

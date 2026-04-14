@@ -238,7 +238,7 @@ function destroyAnalyticsCharts() {
   analyticsCharts = {};
 }
 
-function createBarChart(canvasId, labels, data, color) {
+function createBarChart(canvasId, labels, data, color, onClickBar) {
   const ctx = document.getElementById(canvasId).getContext('2d');
   return new Chart(ctx, {
     type: 'bar',
@@ -266,7 +266,13 @@ function createBarChart(canvasId, labels, data, color) {
           ticks: { color: 'rgba(255,255,255,0.7)', font: { size: 11 } },
           grid: { display: false }
         }
-      }
+      },
+      onClick: onClickBar ? (event, elements) => {
+        if (elements.length > 0) onClickBar(elements[0].index);
+      } : undefined,
+      onHover: onClickBar ? (event, elements) => {
+        event.native.target.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+      } : undefined
     }
   });
 }
@@ -309,7 +315,9 @@ function truncateLabel(label, max = 30) {
   return label.length > max ? label.substring(0, max) + '…' : label;
 }
 
-export async function openAnalyticsModal() {
+export async function openAnalyticsModal(callbacks = {}) {
+  const { loadPathGraph } = callbacks;
+
   destroyAnalyticsCharts();
   analyticsModal.classList.remove('hidden');
 
@@ -353,51 +361,68 @@ export async function openAnalyticsModal() {
       }
     }
 
-    /* top lessons opened (bar) */
+    /* helper: resolve node names for a list of entries with node_id */
+    async function resolveNodeNames(entries) {
+      return Promise.all(
+        entries.map(e =>
+          fetch(`${API_BASE}/getExercise/${e.node_id}`).then(r => r.json()).catch(() => null)
+        )
+      );
+    }
+
+    /* top lessons opened */
     if (topLessonsRes.ok) {
       const topLessons = await topLessonsRes.json();
-      if (Array.isArray(topLessons)) {
-        const top10Lessons = topLessons.slice(0, 10);
-        if (top10Lessons.length > 0) {
-          analyticsCharts.lessons = createBarChart(
-            'chart-top-lessons',
-            top10Lessons.map(e => truncateLabel(e.node_id)),
-            top10Lessons.map(e => e.count),
-            'rgba(100, 180, 255, 0.6)'
-          );
-        }
+      if (Array.isArray(topLessons) && topLessons.length > 0) {
+        const top10 = topLessons.slice(0, 10);
+        const nodeResults = await resolveNodeNames(top10);
+        const labels = top10.map((e, i) => truncateLabel(nodeResults[i]?.nodes?.[0]?.teaches || e.node_id));
+        analyticsCharts.lessons = createBarChart(
+          'chart-top-lessons',
+          labels,
+          top10.map(e => e.count),
+          'rgba(100, 180, 255, 0.6)',
+          (index) => window.open('https://github.com/STEMgraph/' + top10[index].node_id, '_blank')
+        );
       }
     }
 
-    /* top finished (bar) */
+    /* top finished */
     if (topFinishedRes.ok) {
       const topFinished = await topFinishedRes.json();
-      if (Array.isArray(topFinished)) {
-        const top10Finished = topFinished.slice(0, 10);
-        if (top10Finished.length > 0) {
-          analyticsCharts.finished = createBarChart(
-            'chart-top-finished',
-            top10Finished.map(e => truncateLabel(e.node_id)),
-            top10Finished.map(e => e.count),
-            'rgba(100, 255, 180, 0.6)'
-          );
-        }
+      if (Array.isArray(topFinished) && topFinished.length > 0) {
+        const top10 = topFinished.slice(0, 10);
+        const nodeResults = await resolveNodeNames(top10);
+        const labels = top10.map((e, i) => truncateLabel(nodeResults[i]?.nodes?.[0]?.teaches || e.node_id));
+        analyticsCharts.finished = createBarChart(
+          'chart-top-finished',
+          labels,
+          top10.map(e => e.count),
+          'rgba(100, 255, 180, 0.6)',
+          (index) => window.open('https://github.com/STEMgraph/' + top10[index].node_id, '_blank')
+        );
       }
     }
 
-    /* top paths (bar) */
+    /* top paths */
     if (topPathsRes.ok) {
       const topPaths = await topPathsRes.json();
-      if (Array.isArray(topPaths)) {
-        const top10Paths = topPaths.slice(0, 10);
-        if (top10Paths.length > 0) {
-          analyticsCharts.paths = createBarChart(
-            'chart-top-paths',
-            top10Paths.map(e => truncateLabel(e.path_id)),
-            top10Paths.map(e => e.count),
-            'rgba(255, 180, 100, 0.6)'
-          );
-        }
+      if (Array.isArray(topPaths) && topPaths.length > 0) {
+        const top10 = topPaths.slice(0, 10);
+        const pathResults = await Promise.all(
+          top10.map(e => fetch(`${API_BASE}/paths/${e.path_id}`).then(r => r.json()).catch(() => null))
+        );
+        const labels = top10.map((e, i) => truncateLabel(pathResults[i]?.name || e.path_id));
+        analyticsCharts.paths = createBarChart(
+          'chart-top-paths',
+          labels,
+          top10.map(e => e.count),
+          'rgba(255, 180, 100, 0.6)',
+          loadPathGraph ? (index) => {
+            closeModal();
+            loadPathGraph(top10[index].path_id);
+          } : undefined
+        );
       }
     }
   } catch (e) {
@@ -473,7 +498,7 @@ export function setupEventHandlers(callbacks) {
     /* analytics */
     document.getElementById('btn-show-analytics').addEventListener('click', e => {
         e.preventDefault();
-        openAnalyticsModal();
+        openAnalyticsModal({ finishedNodes, todoNodes, loadPathGraph });
     });
 
     /* mark node */
@@ -810,6 +835,31 @@ export function setupEventHandlers(callbacks) {
                 openPathEditView(pathId);
             }
         }
+    });
+
+    /* admin: refresh graph data */
+    document.getElementById('btn-refresh-graph').addEventListener('click', async (e) => {
+        e.preventDefault();
+        const btn = e.currentTarget;
+        btn.textContent = 'Refreshing...';
+        btn.style.pointerEvents = 'none';
+        try {
+            const res = await fetch(`${API_BASE}/refreshDatabase`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${keycloak.token}` }
+            });
+            if (res.ok) {
+                btn.textContent = 'Refresh started!';
+            } else {
+                btn.textContent = 'Error (' + res.status + ')';
+            }
+        } catch {
+            btn.textContent = 'Error';
+        }
+        setTimeout(() => {
+            btn.textContent = 'Refresh Graph-Data';
+            btn.style.pointerEvents = '';
+        }, 3000);
     });
 
     /* to-do graph - menu button */
