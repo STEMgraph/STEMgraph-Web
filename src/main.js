@@ -18,6 +18,7 @@ let Graph;
 let graphHistory = [];
 let finishedNodes = [];
 let todoNodes = [];
+let fullGraphData = null;
 
 async function loadUserNodes() {
   if (!keycloak.authenticated) return;
@@ -166,50 +167,19 @@ async function loadTodoGraph() {
     return;
   }
 
-  try {
-    const pathPromises = todoNodes.map(nodeId =>
-      fetch(`${API_BASE}/getPathToExercise/${nodeId}`)
-        .then(r => r.json())
-    );
+  const filteredNodes = fullGraphData.nodes.filter(n => todoNodes.includes(n.id));
+  const nodeIds = new Set(filteredNodes.map(n => n.id));
+  const filteredLinks = fullGraphData.links.filter(l =>
+    nodeIds.has(l.source?.id || l.source) && nodeIds.has(l.target?.id || l.target)
+  );
 
-    const pathResults = await Promise.all(pathPromises);
+  Graph.nodeThreeObject(createNodeThreeObject);
+  Graph.nodeAutoColorBy(null);
+  Graph.nodeColor(getNodeColor);
+  Graph.nodeVal(() => 1);
+  Graph.graphData({ nodes: filteredNodes, links: filteredLinks });
 
-    const allNodes = new Map();
-    const allLinks = [];
-
-    pathResults.forEach(data => {
-      const sanitized = sanitizeGraphData(data);
-
-      sanitized.nodes.forEach(node => {
-        if (!allNodes.has(node.id)) {
-          allNodes.set(node.id, node);
-        }
-      });
-
-      sanitized.links.forEach(link => {
-        const linkId = `${link.source}-${link.target}`;
-        if (!allLinks.find(l => `${l.source}-${l.target}` === linkId)) {
-          allLinks.push(link);
-        }
-      });
-    });
-
-    const combinedGraph = {
-      nodes: Array.from(allNodes.values()),
-      links: allLinks
-    };
-
-    Graph.nodeThreeObject(createNodeThreeObject);
-    Graph.nodeAutoColorBy(null);
-    Graph.nodeColor(getNodeColor);
-    Graph.nodeVal(() => 1);
-    Graph.graphData(combinedGraph);
-
-    setTimeout(() => Graph.zoomToFit(GRAPH_CONFIG.zoomDuration, GRAPH_CONFIG.zoomPadding), DELAYS.zoomShort);
-  } catch (error) {
-    console.error('Error loading To-Do graph:', error);
-    alert('Error loading To-Do graph');
-  }
+  setTimeout(() => Graph.zoomToFit(GRAPH_CONFIG.zoomDuration, GRAPH_CONFIG.zoomPadding), DELAYS.zoomShort);
 }
 
 /* loadPathGraph */
@@ -299,7 +269,8 @@ loadStartEndNodes().then(() => {
     })
     .then(data => {
       data = sanitizeGraphData(data);
-      
+      fullGraphData = data;
+
       Graph = ForceGraph3D()(document.getElementById("graph-container"))
         .graphData(data)
         .nodeLabel(node => node.teaches || node.name)

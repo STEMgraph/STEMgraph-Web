@@ -1,6 +1,6 @@
 # STEMgraph Web Visualizer
 
-3D visualization of the STEMgraph learning graph.
+3D visualization of the STEMgraph learning graph. You can find detailed docs in the doc folders.
 
 ## Features
 
@@ -55,8 +55,9 @@
 | `F1` | Open help |
 
 ## To-Do
-- example learning paths
-- UI tweaks
+- user profiles with badges for finished paths
+- tests for finished lessons?
+- learning path improvements
 
 
 ## Setup

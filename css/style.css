@@ -644,13 +644,16 @@ h1 {
 
 /* Add to Path section (node modal) */
 #add-to-path-section {
-  display: flex;
   flex-direction: row;
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
   background: rgba(60, 60, 60, 0.8);
   border-radius: 8px;
+}
+
+#add-to-path-section.teacher-shown {
+  display: flex;
 }
 
 #path-select {

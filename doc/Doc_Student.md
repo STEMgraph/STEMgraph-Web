@@ -2,7 +2,7 @@
 
 ## What is STEMgraph?
 
-STEMgraph is a platform that presents STEM learning exercises as an interactive 3D graph. Each node represents one learning exercise. Connections between nodes indicate which prior knowledge an exercise requires. This makes it immediately visible in which order topics can be meaningfully worked through.
+STEMgraph is a platform that presents IT learning exercises as an interactive 3D graph. Each node represents one learning exercise, with the corresponding lessons hosted on GitHub. Connections between nodes indicate which prior knowledge an exercise requires, making it immediately visible in which order topics should be worked through. With every lesson mastered, new pathways of knowledge open up before you.
 
 ---
 
@@ -93,7 +93,7 @@ Clicking on a node opens an information panel showing:
 
 ### Todo List
 
-Exercises can be added to the todo list via the information panel. The **To-Do Graph** button in the menu displays a subgraph containing all exercises on the todo list along with their respective prerequisites.
+Exercises can be added to the todo list via the information panel. The **To-Do Graph** button in the menu displays a subgraph containing all exercises on the todo list.
 
 ### Completed Exercises
 
