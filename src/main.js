@@ -47,8 +47,8 @@ let endNodeIds = new Set();
 async function loadStartEndNodes() {
   try {
     const [startRes, endRes] = await Promise.all([
-      fetch(`${API_BASE}/getStartNodes`),
-      fetch(`${API_BASE}/getEndNodes`)
+      fetch(`${API_BASE}/exercises/start-nodes?format=nodelink`),
+      fetch(`${API_BASE}/exercises/end-nodes?format=nodelink`)
     ]);
     const startData = await startRes.json();
     const endData = await endRes.json();
@@ -195,7 +195,7 @@ async function loadPathGraph(pathId) {
     }
 
     const nodeResults = await Promise.all(
-      nodeIds.map(nodeId => fetch(`${API_BASE}/getExercise/${nodeId}`).then(r => r.json()))
+      nodeIds.map(nodeId => fetch(`${API_BASE}/exercises/${nodeId}?format=nodelink`).then(r => r.json()))
     );
 
     const nodes = nodeResults
@@ -257,7 +257,7 @@ function loadGraph(url, addToHistory = true) {
 }
 
 /* initial load */
-const initialUrl = `${API_BASE}/getWholeGraph`;
+const initialUrl = `${API_BASE}/graph/?format=nodelink`;
 
 initHistory();
 
@@ -281,7 +281,7 @@ loadStartEndNodes().then(() => {
         .onNodeClick(node => {
           if (node.isKeyword) {
             Graph.nodeAutoColorBy(null);
-            loadGraph(`${API_BASE}/getExercisesByKeyword/${encodeURIComponent(node.name)}`);
+            loadGraph(`${API_BASE}/exercises/?keyword=${encodeURIComponent(node.name)}&format=nodelink`);
           } else {
             openModal(node, finishedNodes, todoNodes);
           }
@@ -294,10 +294,10 @@ loadStartEndNodes().then(() => {
       const params = new URLSearchParams(window.location.search);
       if (params.has('keyword')) {
         const kw = params.get('keyword').trim();
-        if (kw) loadGraph(`${API_BASE}/getExercisesByKeyword/${encodeURIComponent(kw)}`);
+        if (kw) loadGraph(`${API_BASE}/exercises/?keyword=${encodeURIComponent(kw)}&format=nodelink`);
       } else if (params.has('node')) {
         const id = params.get('node').trim();
-        if (id) loadGraph(`${API_BASE}/getPathToExercise/${encodeURIComponent(id)}`);
+        if (id) loadGraph(`${API_BASE}/exercises/${encodeURIComponent(id)}/path?format=nodelink`);
       } else if (params.has('path')) {
         const pathId = params.get('path').trim();
         if (pathId) loadPathGraph(pathId);
@@ -327,7 +327,7 @@ loadStartEndNodes().then(() => {
 });
 
 /* keyword autocomplete */
-fetch(`${API_BASE}/getKeywordList`)
+fetch(`${API_BASE}/keywords/`)
   .then(r => r.json())
   .then(data => {
     const datalist = document.getElementById('keyword-suggestions');

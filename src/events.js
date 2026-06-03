@@ -99,7 +99,7 @@ export function openStatisticsModal(finishedNodes, todoNodes) {
   document.getElementById('stat-finished-count').textContent = finishedNodes.length;
   document.getElementById('stat-todo-count').textContent = todoNodes.length;
 
-  fetch(`${API_BASE}/getStatistics`)
+  fetch(`${API_BASE}/graph/statistics`)
     .then(r => r.json())
     .then(data => {
       const total = data.nodeCount || 0;
@@ -190,7 +190,7 @@ function openPathEditView(pathId) {
       }
 
       const nodeResults = await Promise.all(
-        nodeIds.map(nodeId => fetch(`${API_BASE}/getExercise/${nodeId}`).then(r => r.json()))
+        nodeIds.map(nodeId => fetch(`${API_BASE}/exercises/${nodeId}?format=nodelink`).then(r => r.json()))
       );
 
       nodesContainer.innerHTML = '';
@@ -326,7 +326,7 @@ export async function openAnalyticsModal(callbacks = {}) {
   try {
     /* fetch all data in parallel */
     const [statsRes, usersRes, overviewRes, topLessonsRes, topFinishedRes, topPathsRes] = await Promise.all([
-      fetch(`${API_BASE}/getStatistics`),
+      fetch(`${API_BASE}/graph/statistics`),
       fetch(`${API_BASE}/events?type=users`, { headers }),
       fetch(`${API_BASE}/events`, { headers }),
       fetch(`${API_BASE}/events?type=link_open`, { headers }),
@@ -365,7 +365,7 @@ export async function openAnalyticsModal(callbacks = {}) {
     async function resolveNodeNames(entries) {
       return Promise.all(
         entries.map(e =>
-          fetch(`${API_BASE}/getExercise/${e.node_id}`).then(r => r.json()).catch(() => null)
+          fetch(`${API_BASE}/exercises/${e.node_id}?format=nodelink`).then(r => r.json()).catch(() => null)
         )
       );
     }
@@ -498,7 +498,7 @@ export function setupEventHandlers(callbacks) {
     /* whole graph */
     btnWholeGraph.addEventListener('click', e => {
         e.preventDefault();
-        loadGraph(`${API_BASE}/getWholeGraph`);
+        loadGraph(`${API_BASE}/graph/?format=nodelink`);
     });
 
     btnShowStatistics.addEventListener('click', e => {
@@ -572,7 +572,7 @@ export function setupEventHandlers(callbacks) {
         if (!node) return;
 
         Graph().nodeAutoColorBy(null);
-        const apiUrl = `${API_BASE}/getPathToExercise/${node.id}`;
+        const apiUrl = `${API_BASE}/exercises/${node.id}/path?format=nodelink`;
         loadGraph(apiUrl, true);
         closeModal();
     });
@@ -594,7 +594,7 @@ export function setupEventHandlers(callbacks) {
         const keyword = keywordInput.value.trim();
         if (keyword) {
             Graph().nodeAutoColorBy(null);
-            loadGraph(`${API_BASE}/getExercisesByKeyword/${encodeURIComponent(keyword)}`);
+            loadGraph(`${API_BASE}/exercises/?keyword=${encodeURIComponent(keyword)}&format=nodelink`);
         }
     });
 
@@ -603,7 +603,7 @@ export function setupEventHandlers(callbacks) {
         e.preventDefault();
         if (!Graph()) return;
 
-        const apiUrl = `${API_BASE}/getKeywordCount`;
+        const apiUrl = `${API_BASE}/keywords/count`;
 
         fetch(apiUrl)
             .then(r => r.json())
@@ -644,7 +644,7 @@ export function setupEventHandlers(callbacks) {
 
         try {
             if (includeDeps) {
-                const data = await fetch(`${API_BASE}/getPathToExercise/${node.id}`).then(r => r.json());
+                const data = await fetch(`${API_BASE}/exercises/${node.id}/path?format=nodelink`).then(r => r.json());
                 await Promise.all(data.nodes.map(n =>
                     fetch(`${API_BASE}/paths/${pathId}/nodes`, {
                         method: 'POST',
@@ -860,7 +860,7 @@ export function setupEventHandlers(callbacks) {
         btn.textContent = 'Refreshing...';
         btn.style.pointerEvents = 'none';
         try {
-            const res = await fetch(`${API_BASE}/refreshDatabase`, {
+            const res = await fetch(`${API_BASE}/admin/refresh-db`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${keycloak.token}` }
             });
